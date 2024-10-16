@@ -1,21 +1,21 @@
 
 <template>
     <div class="flex one">
-        <h1 class="full" style="color:#52D6B5">Welcome to <span style="color:#F97D7B">Gamia</span></h1>
-        <div class="flex two">
+        <h1 class="full greenColor">Welcome to <span class="redColor">Gamia</span></h1>
+        <div class="flex twelve">
             <!-- left block -->
-            <div class="flex half center">
-                <span class="full">Games</span>
+            <div class="flex one half center mygap">
+                <span class="full redColor">Games</span>
                 <ul v-for="game in allGames" :key="game.id">
                     <li>
-                        <button class="menuButton">{{ game.name }}</button>
+                        <button class="fifth redColor menuButton">{{ game.name }}</button>
                     </li>
                 </ul>
 
                 <div>
-                    <span> Connect</span>
+                    <span class="redColor"> Connect</span>
                      <form @submit.prevent="handleJoin">
-                        <span><input type="text"><button @click="">Join</button></span>
+                        <span><input type="text"><button @click="" class="redColor menuButton">Join</button></span>
                      </form>
                 </div>
             </div>
@@ -38,10 +38,30 @@
 
 <style scoped>
 
+
+.greenColor
+{
+    color:#52D6B5
+}
+
+.redColor
+{
+    color:#F97D7B
+}
+
 .menuButton
 {
-    color: #F97D7B;
+
     background-color: rgba(251, 190, 91, 0.14);
+    padding: 2% 0 2% 0
+}
+
+.menuButton:hover
+{
+    transition: 0s;
+    outline: solid;
+    outline-color:#52D6B5;
+    
 }
 
 .center
@@ -53,6 +73,7 @@ h1
 {
     font-family: "Jua", cursive;
     font-size: 64px;
+
 }
 
 

@@ -23,4 +23,20 @@ h1
   text-align: center;
 }
 
+body
+{
+  background-color: #FCEEDF;
+}
+
+ul
+{
+  list-style: none;
+  margin: 0;
+}
+
+ul li
+{
+  margin: 0;
+}
+
 </style>
