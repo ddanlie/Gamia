@@ -41,7 +41,7 @@
 .menuButton
 {
     color: #F97D7B;
-    background-color: rgba(251, 190, 91, 0.14);
+    background-color: rgba(251, 190, 91, 0.13);
 }
 
 .center
