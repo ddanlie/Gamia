@@ -102,7 +102,8 @@ def get_fantom_user():
     db.session.commit()
 
     user_data = {
-        'id': fantom_user.name,
+        'id': fantom_user.id,
+        'name': fantom_user.name,
     }
 
     #debug, comment this later TODO
