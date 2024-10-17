@@ -9,16 +9,22 @@
                     <h2 class="redColor">Games</h2>
                     <ul class="menuUl">
                         <li v-for="game in allGames" :key="game.id" >
-                            <button @mouseover="getGameDescription(game.id)" @mouseleave="emptyGameDescription()" class="fourth redColor menuButton" style="font-size: 24px;">{{ game.name }}</button>
+                            <button type="submit" for="createGameForm" @click="createNewGame" @mouseover="setGame(game.id)" @mouseleave="emptyGameDescription()" class="fourth redColor menuButton" style="font-size: 24px;">{{ game.name }}</button>
                         </li>
-
                     </ul>
+                    <h3 v-if="errorWarning != ''" style="color:red;">{{ errorWarning }}</h3>
+                    <form id="createGameForm" @submit.prevent style="margin-top: 5%;">
+                        <label>
+                            <input type="checkbox">
+                            <span class="checkable">Private game</span>
+                        </label>
+                    </form>
                 </div>
                 <form  @submit.prevent="handleJoin" class="flex one center">
                     <div class="center third">
                         <h2 class="redColor"> Connect</h2>
                         <div class="spanPad">
-                            <input class="two-third" type="text">
+                            <input class="two-third" type="text" v-model="privateFlag">
                             <button class="third" @click="" style="color: #F2FF00; background-color: #52D6B5;">Join</button>
                         </div>
                     </div>
@@ -45,28 +51,23 @@
 
     export default {
 
-        mounted() {
+        mounted() 
+        {
+            this.setFantomUser();
+            this.getAllGames();
 
-            const getAllGames = () => {
-                this.$api.get("all_games")
-                .then(response => {
-                    this.allGames = response.data;
-                    console.log("got it")
-                })
-                .catch(error => {
-                    setTimeout(getAllGames, 2000);
-                    console.log(error)
-                })
-            }
-
-            getAllGames();
+            
         },
 
-        data() {
+        data() 
+        {
             return {
                 allGames: "",
                 gameDescriptionSrc: "",
-                menuGameId: ""
+                chosenGameId: "",
+                user: "",
+                privateFlag: false,
+                errorWarning: ""
             }   
         },
 
@@ -76,28 +77,74 @@
 
             },
 
-            getGameDescription(gameId)
+            setFantomUser()
+            {
+                this.$api.get("fantom_user", { 
+                    params: {withCredentials: true}
+                })
+                .then(response => {
+                    this.user = response.data;
+                    this.$cookie.set("userId", this.user.id);
+                    console.log("Current user = "+this.user['name']);
+                })
+                .catch(error => {
+                    setTimeout(this.setFantomUser, 2000);
+                    console.log(error);
+                })
+            },
+
+            getAllGames()
+            {
+                this.$api.get("all_games", { 
+                    params: {withCredentials: true}
+                })
+                .then(response => {
+                    this.allGames = response.data;
+                    console.log("got all games");
+                })
+                .catch(error => {
+                    setTimeout(this.getAllGames, 2000);
+                    console.log(error);
+                })
+            },
+
+            setGame(gameId)
             {   
-                this.menuGameId = gameId;
+                this.chosenGameId = gameId;
 
                 this.$api.get("game_info", {
-                        params: {
-                            "id": gameId
-                        }
+                    params: {
+                        withCredentials: true,
+                        "id": gameId
+                    }
                 })
                 .then(response => {
                     this.gameDescriptionSrc = response.data.src;
                 })
                 .catch(error => {
-                    setTimeout(getAllGames, 2000);
+                    setTimeout(setGame, 2000);
                     console.log(error)
                 })
             },
 
             emptyGameDescription()
             {
-                this.menuGameId = "";
+                this.chosenGameId = "";
                 this.gameDescriptionSrc = ""
+            },
+
+            createNewGame()
+            {
+                this.$api.post("create_game_for", {
+                        withCredentials: true,
+                        "userId": this.user.id,
+                        "gameId": this.chosenGameId,
+                        "private": this.privateFlag
+                })
+                .catch(error => {
+                    this.errorWarning = "Error, try again";
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
+                })
             }
         }
 
@@ -110,7 +157,7 @@
 
 .menuUl
 { 
-    max-height: 300px; 
+    max-height: 200px; 
     overflow-y:auto;
     scrollbar-width: thin; /* Make scrollbar thin */
     scrollbar-color: #52D6B5 #FCEEDF; /* Change scrollbar thumb and track colors */
@@ -166,6 +213,12 @@ h2
     font-family: "Jua", cursive;
     font-size: 48px;
 
+}
+
+h3 
+{
+    font-family: "Jua", cursive;
+    font-size: 12px;
 }
 
 

@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-import json
+import json, random, string
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, support_credentials=True)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -41,7 +41,6 @@ class PlayedGame(db.Model):
     __tablename__ = 'playedgame'
     id = db.Column(db.Integer, primary_key=True)
     game_id = db.Column(db.BigInteger, db.ForeignKey('allgames.id'))
-    name = db.Column(db.String(40), nullable=False)
     state = db.Column(db.Enum('Preparing', 'Playing', 'Finished', name='game_states'))  # Enum for game state
     party_code = db.Column(db.String(5), nullable=False)
     private = db.Column(db.Boolean, default=False)
@@ -72,13 +71,14 @@ def insert_default_games():
         game1 = AllGames(type='Riddle', json_data=json.dumps({'src': 'RiddleGameDemonstration.png'}))
         game2 = AllGames(type='Recycle', json_data=json.dumps({'src': 'RecycleGameDemonstration.png'}))
 
-
         db.session.add(game1)
         db.session.add(game2)
 
         db.session.commit()
 
 
+def generate_game_code():
+    return ''.join(random.choices(string.ascii_uppercase, k=5))
 
 with app.app_context():
     db.drop_all()
@@ -95,23 +95,30 @@ with app.app_context():
 #Routes#################################################################################
 @app.route('/api/fantom_user') 
 def get_fantom_user():
-    fantom_user = Users(name='user#', fantom=True)
-    db.session.add(fantom_user)
-    db.session.commit()
-    fantom_user.name += f"{fantom_user.id:04d}"
-    db.session.commit()
+    id = request.cookies.get('userId')
+    if id != None:
+        fantom_user = Users.query.get(id)
+    else:
+        fantom_user = Users(name='user#', fantom=True)
+        db.session.add(fantom_user)
+        db.session.commit()
+        fantom_user.name += f"{fantom_user.id:04d}"
+        db.session.commit()
 
     user_data = {
-        'id': fantom_user.id,
+        'id': str(fantom_user.id),
         'name': fantom_user.name,
     }
 
+    response = jsonify(user_data)
+    #cookie is set by client
+    # response.set_cookie('userId', value=str(user_data['id']))
     #debug, comment this later TODO
-    db.session.delete(fantom_user)
-    db.session.commit()
+    # db.session.delete(fantom_user)
+    # db.session.commit()
     #debug end
 
-    return jsonify(user_data)
+    return response
 
 
 @app.route('/api/all_games') 
@@ -120,7 +127,7 @@ def get_all_games():
 
     games_data = [
         {
-            'id': game.id,
+            'id': str(game.id),
             'name': game.type
         }   
         for game in games
@@ -137,6 +144,30 @@ def get_game_info():
         return jsonify({'src': src})
     else:
         return "", 404 
+
+
+@app.route('/api/create_game_for', methods=["POST"]) 
+def post_create_game_for():    
+    host_id = request.args.get('userId')
+    new_game_id = request.args.get('gameId')
+    is_private = request.args.get('private')
+
+    host = Users.query.get(host_id)
+
+    if not host:
+        return 500
+    
+    
+    #some day - check if party code is not unique
+    # new_game = PlayedGame(
+    #     game_id=new_game_id, 
+    #     state="Preparing",
+    #     party_code=generate_game_code(),
+    #     private=false)
+    print("requested")
+    return 404
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
