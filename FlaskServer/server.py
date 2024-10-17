@@ -4,7 +4,7 @@ from flask_cors import CORS
 import json, random, string
 
 app = Flask(__name__)
-CORS(app, support_credentials=True)
+CORS(app, supports_credentials=True)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -14,7 +14,6 @@ db = SQLAlchemy(app)
 class Users(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    party_id = db.Column(db.BigInteger, nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=True)
     password = db.Column(db.String(40), nullable=True)
     name = db.Column(db.String(40), nullable=False)
@@ -44,6 +43,7 @@ class PlayedGame(db.Model):
     state = db.Column(db.Enum('Preparing', 'Playing', 'Finished', name='game_states'))  # Enum for game state
     party_code = db.Column(db.String(5), nullable=False)
     private = db.Column(db.Boolean, default=False)
+    temp_json_data = db.Column(db.String(5000), nullable=True)
 
     game_type = db.relationship('AllGames', backref='played_games')
 
@@ -96,6 +96,7 @@ with app.app_context():
 @app.route('/api/fantom_user') 
 def get_fantom_user():
     id = request.cookies.get('userId')
+
     if id != None:
         fantom_user = Users.query.get(id)
     else:
@@ -106,17 +107,17 @@ def get_fantom_user():
         db.session.commit()
 
     user_data = {
-        'id': str(fantom_user.id),
+        'id': fantom_user.id,
         'name': fantom_user.name,
+        'current_game_id': fantom_user.current_game_id,
+        'ready_for_game': fantom_user.ready_for_game,
+        'host': fantom_user.host,
     }
 
     response = jsonify(user_data)
     #cookie is set by client
-    # response.set_cookie('userId', value=str(user_data['id']))
-    #debug, comment this later TODO
-    # db.session.delete(fantom_user)
-    # db.session.commit()
-    #debug end
+    response.set_cookie('userId', value=str(user_data['id']))
+
 
     return response
 
@@ -128,7 +129,7 @@ def get_all_games():
     games_data = [
         {
             'id': str(game.id),
-            'name': game.type
+            'name': game.type,
         }   
         for game in games
     ]
@@ -139,33 +140,70 @@ def get_all_games():
 @app.route('/api/game_info') 
 def get_game_info():
     game = AllGames.query.get(request.args['id'])
-    if game:
-        src = url_for('static', filename=f'{json.loads(game.json_data)["src"]}', _external=True)
-        return jsonify({'src': src})
-    else:
-        return "", 404 
+    if game == None:
+        return jsonify({}), 404
+    
+    src = url_for('static', filename=f'{json.loads(game.json_data)["src"]}', _external=True)
+    data = {
+        'routeName': game.type, 
+        'src': src,
+    }
+    return jsonify(data)
+
+    
+
+@app.route('/api/played_game') 
+def get_played_game(): 
+    game = PlayedGame.query.get(request.args['id'])
+    if game == None:
+        return jsonify({}), 404
+    data = {
+        "id": game.id,
+        "game_id": game.game_id,
+        "state": game.state,
+        "party_code": game.party_code,
+        "private": game.private,
+        "data": game.temp_json_data
+    }
+    return jsonify(data)
+       
 
 
 @app.route('/api/create_game_for', methods=["POST"]) 
 def post_create_game_for():    
-    host_id = request.args.get('userId')
-    new_game_id = request.args.get('gameId')
-    is_private = request.args.get('private')
-
+    data = request.get_json() 
+    host_id = data['userId']
+    new_game_id = data['gameId']
+    is_private = data['private']
     host = Users.query.get(host_id)
 
     if not host:
-        return 500
+        return jsonify({}), 500
     
-    
+    #if user already has game with status: playing - not allow to create game
+    #if user has game with status: preparing - give host to someone else or delete game
+    game = PlayedGame.query.get(host.current_game_id)
+    if(game):
+        return jsonify({}), 200
+
     #some day - check if party code is not unique
-    # new_game = PlayedGame(
-    #     game_id=new_game_id, 
-    #     state="Preparing",
-    #     party_code=generate_game_code(),
-    #     private=false)
-    print("requested")
-    return 404
+    new_game = PlayedGame(
+        game_id=new_game_id, 
+        state="Preparing",
+        party_code=generate_game_code(),
+        private=is_private)
+
+    db.session.add(new_game)
+    db.session.commit()
+
+    host.current_game_id = new_game.id
+    host.ready_for_game = False
+    host.host = True
+
+    db.session.add(host)
+    db.session.commit()
+
+    return jsonify({}), 200
 
 
 

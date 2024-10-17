@@ -2,8 +2,18 @@
 import { RouterLink, RouterView } from 'vue-router'
 import HomeView from './views/HomeView.vue';
 // import HelloWorld from './components/HelloWorld.vue'
+
+
+
 </script>
 
+<script>
+export default {
+  mounted() {
+    this.$router.push({ name: 'home' });
+  }
+}
+</script>
 
 <template>
 
@@ -13,8 +23,8 @@ import HomeView from './views/HomeView.vue';
       </nav> -->
 
 
-  <!-- <RouterView /> -->
-  <HomeView/>
+  <RouterView />
+  <!-- <HomeView/> -->
 </template>
 
 

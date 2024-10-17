@@ -1,3 +1,3 @@
 import json
 
-print(json.dumps({'src': 'RecycleGameDemonstration.png'}))
+print(str(True))

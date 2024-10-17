@@ -9,22 +9,22 @@
                     <h2 class="redColor">Games</h2>
                     <ul class="menuUl">
                         <li v-for="game in allGames" :key="game.id" >
-                            <button type="submit" for="createGameForm" @click="createNewGame" @mouseover="setGame(game.id)" @mouseleave="emptyGameDescription()" class="fourth redColor menuButton" style="font-size: 24px;">{{ game.name }}</button>
+                            <button type="submit" for="createGameForm" @click="createNewGame()" @mouseover="setGameInfo(game.id)" @mouseleave="emptyGameDescription()" class="fourth redColor menuButton" style="font-size: 24px;">{{ game.name }}</button>
                         </li>
                     </ul>
                     <h3 v-if="errorWarning != ''" style="color:red;">{{ errorWarning }}</h3>
                     <form id="createGameForm" @submit.prevent style="margin-top: 5%;">
                         <label>
-                            <input type="checkbox">
+                            <input type="checkbox" v-model="privateFlag">
                             <span class="checkable">Private game</span>
                         </label>
                     </form>
                 </div>
                 <form  @submit.prevent="handleJoin" class="flex one center">
                     <div class="center third">
-                        <h2 class="redColor"> Connect</h2>
+                        <h2 class="redColor">Connect</h2>
                         <div class="spanPad">
-                            <input class="two-third" type="text" v-model="privateFlag">
+                            <input class="two-third" type="text" v-model="partyCode">
                             <button class="third" @click="" style="color: #F2FF00; background-color: #52D6B5;">Join</button>
                         </div>
                     </div>
@@ -64,10 +64,12 @@
             return {
                 allGames: "",
                 gameDescriptionSrc: "",
+                gameRouteName: "",
                 chosenGameId: "",
                 user: "",
                 privateFlag: false,
-                errorWarning: ""
+                partyCode: "",
+                errorWarning: "",
             }   
         },
 
@@ -79,51 +81,46 @@
 
             setFantomUser()
             {
-                this.$api.get("fantom_user", { 
-                    params: {withCredentials: true}
-                })
+                this.$api.get("fantom_user")
                 .then(response => {
                     this.user = response.data;
-                    this.$cookie.set("userId", this.user.id);
                     console.log("Current user = "+this.user['name']);
                 })
                 .catch(error => {
                     setTimeout(this.setFantomUser, 2000);
-                    console.log(error);
+                    // console.log(error);
                 })
             },
 
             getAllGames()
             {
-                this.$api.get("all_games", { 
-                    params: {withCredentials: true}
-                })
+                this.$api.get("all_games")
                 .then(response => {
                     this.allGames = response.data;
                     console.log("got all games");
                 })
                 .catch(error => {
                     setTimeout(this.getAllGames, 2000);
-                    console.log(error);
+                    // console.log(error);
                 })
             },
 
-            setGame(gameId)
+            setGameInfo(gameId)
             {   
                 this.chosenGameId = gameId;
 
                 this.$api.get("game_info", {
                     params: {
-                        withCredentials: true,
-                        "id": gameId
+                        id: gameId
                     }
                 })
                 .then(response => {
                     this.gameDescriptionSrc = response.data.src;
+                    this.gameRouteName = response.data.routeName;
                 })
                 .catch(error => {
-                    setTimeout(setGame, 2000);
-                    console.log(error)
+                    setTimeout(() => this.setGameInfo(gameId), 2000);
+                    // console.log(error)
                 })
             },
 
@@ -136,10 +133,14 @@
             createNewGame()
             {
                 this.$api.post("create_game_for", {
-                        withCredentials: true,
-                        "userId": this.user.id,
-                        "gameId": this.chosenGameId,
-                        "private": this.privateFlag
+                        userId: this.user.id,
+                        gameId: this.chosenGameId,
+                        private: this.privateFlag
+                }, {
+                        withCredentials: true
+                })
+                .then(response => {
+                    this.$router.push({ name: this.gameRouteName });
                 })
                 .catch(error => {
                     this.errorWarning = "Error, try again";
