@@ -1,18 +1,56 @@
 
 <template>
 
-Recycle Game
+    <div class="flex one center">
+        <!-- game table -->
+        <div class="flex five">
+            <!-- main content -->
+            <div class="flex four four-fifth">
+                <div class="full">
+                    <button class="redBack blackColor" style="margin: 2% 0 0 2%;  padding: 1% 2% 1% 2%">Quit</button>
+                </div>
+
+                <div class="three-fourth textCenter">
+                    <h1 style="padding:0;">Recycle</h1>
+                    <img :src="gameDescriptionSrc" style='max-height: 100vh; max-width: 100%; width: 800px; height: 500px; object-fit: contain' :style="{ opacity: gameDescriptionSrc==='' ? '1' : '1'}">
+                </div>
+
+                <div class="fourth textCenter">
+                    <PartyCodeComponent/>
+                </div>
+            </div>
+
+            <!-- chat -->
+            <div class="fifth textCenter">
+                <ChatComponent/>
+            </div>
+        </div>
+        
+        <!-- players -->
+        <div class="textCenter">
+            <PartyUsersComponent/>
+        </div>
+    </div>
 
 </template>
 
 
 <script>
+    import PartyCodeComponent from '../../components/xdomra00Comps/PartyCodeComponent.vue';
+    import PartyUsersComponent from '../../components/xdomra00Comps/PartyUsersComponent.vue';
+    import ChatComponent from '../../components/xivano08Comps/ChatComponent.vue';
 
     export default {
 
+        components: {
+            PartyCodeComponent: PartyCodeComponent, 
+            PartyUsersComponent: PartyUsersComponent, 
+            ChatComponent: ChatComponent
+        },
+
         mounted() 
         {
-            this.setUserThenGame();
+            // this.setUserThenGame();
         },
 
         data() 

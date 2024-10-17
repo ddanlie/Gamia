@@ -1,6 +1,7 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 import HomeView from './views/HomeView.vue';
+import RecycleGameView from './views/xdomra00Views/RecycleGameView.vue';
 // import HelloWorld from './components/HelloWorld.vue'
 
 
@@ -23,8 +24,9 @@ export default {
       </nav> -->
 
 
-  <RouterView />
+  <!-- <RouterView /> -->
   <!-- <HomeView/> -->
+   <RecycleGameView/>
 </template>
 
 

@@ -172,16 +172,6 @@
 }
 
 
-.greenColor
-{
-    color:#52D6B5
-}
-
-.redColor
-{
-    color:#F97D7B
-}
-
 .menuButton
 {
 
@@ -197,11 +187,9 @@
     
 }
 
-.textCenter
-{
-    text-align: center;
-} 
+</style>
 
+<style>
 h1 
 {
     font-family: "Jua", cursive;
@@ -222,6 +210,30 @@ h3
     font-size: 12px;
 }
 
+.textCenter
+{
+    text-align: center;
+} 
+
+.greenColor
+{
+    color:#52D6B5;
+}
+
+.redColor
+{
+    color:#F97D7B;
+}
+
+.blackColor
+{
+    color: black;
+}
+
+.redBack
+{
+    background-color: #F97D7B;
+}
+
 
 </style>
-
