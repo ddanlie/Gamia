@@ -1,6 +1,7 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -68,11 +69,13 @@ class GameStatistics(db.Model):
 
 def insert_default_games():
     if AllGames.query.count() == 0:
-        game1 = AllGames(type='Riddle', json_data=None)
-        game2 = AllGames(type='Recycle', json_data=None)
+        game1 = AllGames(type='Riddle', json_data=json.dumps({'src': 'RiddleGameDemonstration.png'}))
+        game2 = AllGames(type='Recycle', json_data=json.dumps({'src': 'RecycleGameDemonstration.png'}))
+
 
         db.session.add(game1)
         db.session.add(game2)
+
         db.session.commit()
 
 
@@ -92,14 +95,14 @@ with app.app_context():
 #Routes#################################################################################
 @app.route('/api/fantom_user') 
 def get_fantom_user():
-    fantom_user = Users(name="user#", fantom=True)
+    fantom_user = Users(name='user#', fantom=True)
     db.session.add(fantom_user)
     db.session.commit()
     fantom_user.name += f"{fantom_user.id:04d}"
     db.session.commit()
 
     user_data = {
-        "id": fantom_user.name,
+        'id': fantom_user.name,
     }
 
     #debug, comment this later TODO
@@ -116,8 +119,8 @@ def get_all_games():
 
     games_data = [
         {
-            "id": game.id,
-            "name": game.type
+            'id': game.id,
+            'name': game.type
         }   
         for game in games
     ]
@@ -125,6 +128,14 @@ def get_all_games():
     return jsonify(games_data)
 
 
+@app.route('/api/game_info') 
+def get_game_info():
+    game = AllGames.query.get(request.args['id'])
+    if game:
+        src = url_for('static', filename=f'{json.loads(game.json_data)["src"]}', _external=True)
+        return jsonify({'src': src})
+    else:
+        return "", 404 
 
 if __name__ == '__main__':
     app.run(debug=True)
