@@ -1,37 +1,41 @@
 
 <template>
-
     <div class="flex one center">
         <!-- game table -->
         <div class="flex five">
+            
+            <div class="full">
+                <button class="redBack" style="margin: 2% 0 0 2%;  padding: 1% 2% 1% 2%">
+                    <h3 class="blackColor zeroPad">
+                        Quit
+                    </h3>
+                </button>
+            </div>
+
             <!-- main content -->
-            <div class="flex four four-fifth">
-                <div class="full">
-                    <button class="redBack blackColor" style="margin: 2% 0 0 2%;  padding: 1% 2% 1% 2%">Quit</button>
-                </div>
+            <div class="full two-fifth-1500 textCenter infoWrap">
+                <h1 class="greenColor" style="padding:0;">Recycle</h1>
+                <img :src="gameDescriptionSrc" style='max-height: 100vh; max-width: 100%; width: 800px; height: 500px; object-fit: contain' :style="{ opacity: gameDescriptionSrc==='' ? '1' : '1'}">
+            </div>
 
-                <div class="three-fourth textCenter">
-                    <h1 style="padding:0;">Recycle</h1>
-                    <img :src="gameDescriptionSrc" style='max-height: 100vh; max-width: 100%; width: 800px; height: 500px; object-fit: contain' :style="{ opacity: gameDescriptionSrc==='' ? '1' : '1'}">
-                </div>
-
-                <div class="fourth textCenter">
-                    <PartyCodeComponent/>
-                </div>
+            <!-- code -->
+            <div class="full half-500 fifth-1500 textCenter partyCodeWrap">
+                <PartyCodeComponent :code="currentGame.party_code"/>
             </div>
 
             <!-- chat -->
-            <div class="fifth">
+            <div class="full half-500 off-none-1500 fifth-1500 chatWrap">
                 <ChatComponent/>
+            </div>
+            <!-- players -->
+            <div class="full partyUsersWrap">
+                <PartyUsersComponent :users="currentPlayers"/>
             </div>
         </div>
         
-        <!-- players -->
-        <div class="flex">
-            <PartyUsersComponent :users="currentPlayers"/>
-        </div>
-    </div>
 
+
+    </div>
 </template>
 
 
@@ -138,3 +142,48 @@
     }
 
 </script>
+
+
+<style scoped>
+
+.infoWrap
+{
+    margin-left: 13%;
+    min-height: 650px;
+}
+
+@media(max-width:1500px)
+{
+    .infoWrap
+    {
+        margin-left: 0;
+    }
+}
+
+.partyUsersWrap
+{
+    margin: 2% 0% 0% 1%;
+    padding: 0% 2% 0% 2%;
+}
+
+.chatWrap
+{
+    min-height: 650px;
+}
+
+@media(max-width:1500px)
+{
+    .chatWrap
+    {
+        min-height: 800px;
+    }
+}
+
+.partyCodeWrap
+{
+    margin: 8% 0% 0 0%;
+    padding: 0;
+    
+}
+
+</style>

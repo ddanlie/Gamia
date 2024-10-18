@@ -110,8 +110,6 @@ def get_fantom_user():
         'id': fantom_user.id,
         'name': fantom_user.name,
         'current_game_id': fantom_user.current_game_id,
-        'ready_for_game': fantom_user.ready_for_game,
-        'host': fantom_user.host,
     }
 
     response = jsonify(user_data)
@@ -178,9 +176,11 @@ def post_create_game_for():
     host = Users.query.get(host_id)
 
     if not host:
-        return jsonify({}), 500
+        return jsonify({}), 404
     
-    #if user already has game with status: playing - not allow to create game
+    #if user already has game - not allow to create game
+    if(host.current_game_id != None):
+        return jsonify({}), 404
     #if user has game with status: preparing - give host to someone else or delete game
     game = PlayedGame.query.get(host.current_game_id)
     if(game):
@@ -221,6 +221,17 @@ def get_game_players():
     } for user in users]
 
     return jsonify(data)
+
+
+@app.route('/api/disconnect_player') 
+def post_disconnect_player(): 
+    player = Users.query.get(request.args['id'])
+    if player == None:
+        return jsonify({}), 404
+
+
+
+    return jsonify({}), 200
 
 
 if __name__ == '__main__':

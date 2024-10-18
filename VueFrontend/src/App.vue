@@ -2,6 +2,7 @@
 import { RouterLink, RouterView } from 'vue-router'
 import HomeView from './views/HomeView.vue';
 import RecycleGameView from './views/xdomra00Views/RecycleGameView.vue';
+import RiddleGameView from './views/xivano08Views/RiddleGameView.vue';
 // import HelloWorld from './components/HelloWorld.vue'
 
 
@@ -11,7 +12,9 @@ import RecycleGameView from './views/xdomra00Views/RecycleGameView.vue';
 <script>
 export default {
   mounted() {
-    this.$router.push({ name: 'home' });
+    if (this.$route.name === null) {
+      this.$router.push({ name: 'home' });
+    }
   }
 }
 </script>
@@ -26,12 +29,13 @@ export default {
 
   <RouterView />
   <!-- <HomeView/> -->
-   <!-- <RecycleGameView/> -->
+  <!-- <RecycleGameView/> -->
+  <!-- <RiddleGameView/> -->
 </template>
 
 
 <style>
-h1 
+h1,h2,h3,h4,h5
 {
   text-align: center;
 }

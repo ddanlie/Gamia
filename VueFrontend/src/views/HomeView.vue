@@ -210,7 +210,7 @@ h3
     font-size: 24px;
 }
 
-h4 
+h4
 {
     font-family: "Jua", cursive;
     font-size: 12px;
@@ -241,6 +241,15 @@ h4
 {
     background-color: #F97D7B;
 }
+ 
+.greenBack
+{
+    background-color: #52D6B5;
+}
 
+.zeroPad
+{
+    padding: 0;
+}
 
 </style>
