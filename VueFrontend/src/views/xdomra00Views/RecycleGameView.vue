@@ -5,11 +5,15 @@
         <div class="flex five">
             
             <div class="full">
-                <button class="redBack" style="margin: 2% 0 0 2%;  padding: 1% 2% 1% 2%">
+                <button @click="this.disconnectUser" class="redBack" style="margin: 2% 0 0 2%;  padding: 1% 2% 1% 2%">
                     <h3 class="blackColor zeroPad">
                         Quit
                     </h3>
+                    <h4 v-if="errorWarning">
+                        {{ errorWarning }}
+                    </h4>
                 </button>
+
             </div>
 
             <!-- main content -->
@@ -136,6 +140,25 @@
                 .catch(error => {
                     setTimeout(() => this.currentPlayersPoll(currentGameId), 2000);
                     // console.log(error);
+                })
+            },
+
+            disconnectUser()
+            {
+                if(!this.user)
+                    return;
+
+                this.$api.post("disconnect_player", {
+                    id: this.user.id
+                }, {
+                        withCredentials: true
+                })
+                .then(response => {
+                    this.$router.push({ name: "home" });
+                })
+                .catch(error => {
+                    this.errorWarning = "Error, cant't disconnect";
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
                 })
             }
         }

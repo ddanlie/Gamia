@@ -46,6 +46,7 @@ class PlayedGame(db.Model):
     temp_json_data = db.Column(db.String(5000), nullable=True)
 
     game_type = db.relationship('AllGames', backref='played_games')
+    players = db.relationship('Users', backref='played_game')
 
     def __repr__(self):
         return f'PlayedGame {self.name}'
@@ -207,7 +208,7 @@ def post_create_game_for():
 
 
 @app.route('/api/game_players') 
-def get_game_players(): 
+def get_game_players():
     game = PlayedGame.query.get(request.args['id'])
     if game == None:
         return jsonify({}), 404
@@ -223,13 +224,27 @@ def get_game_players():
     return jsonify(data)
 
 
-@app.route('/api/disconnect_player') 
-def post_disconnect_player(): 
-    player = Users.query.get(request.args['id'])
-    if player == None:
+@app.route('/api/disconnect_player', methods=["POST"]) 
+def post_disconnect_player():
+    data = request.get_json()  
+    player = Users.query.get(data['id'])
+    if not player:
         return jsonify({}), 404
+    
+    game = player.played_game
+
+    player.current_game_id = None
+    player.host = False
+    player.ready_for_game = False
+
+    db.session.add(player)
+    db.session.commit()
 
 
+    #delete game if not users left and if game did not finish
+    if game.state != 'Finished' and not game.users:
+         db.session.delete(game)
+         db.session.commit()
 
     return jsonify({}), 200
 

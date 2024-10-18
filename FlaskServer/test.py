@@ -1,3 +1,3 @@
 import json
 
-print(str(True))
+print(bool([]))
