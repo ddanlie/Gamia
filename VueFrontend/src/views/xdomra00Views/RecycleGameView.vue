@@ -21,14 +21,14 @@
             </div>
 
             <!-- chat -->
-            <div class="fifth textCenter">
+            <div class="fifth">
                 <ChatComponent/>
             </div>
         </div>
         
         <!-- players -->
-        <div class="textCenter">
-            <PartyUsersComponent/>
+        <div class="flex">
+            <PartyUsersComponent :users="currentPlayers"/>
         </div>
     </div>
 
@@ -50,7 +50,7 @@
 
         mounted() 
         {
-            // this.setUserThenGame();
+            this.setUserThenGame();
         },
 
         data() 
@@ -59,6 +59,7 @@
                 gameDescriptionSrc: "",
                 currentGame: "",
                 user: "",
+                currentPlayers: "",
                 errorWarning: ""
             }   
         },
@@ -92,6 +93,7 @@
                     console.log("2. Current game = "+JSON.stringify(this.currentGame));
 
                     this.setGameInfo(this.currentGame.game_id);
+                    this.currentPlayersPoll(currentGameId);
                 })
                 .catch(error => {
                     setTimeout(() => this.setPLayedGame(currentGameId), 2000);
@@ -108,9 +110,27 @@
                 })
                 .then(response => {
                     this.gameDescriptionSrc = response.data.src;
+
                 })
                 .catch(error => {
                     setTimeout(setGame, 2000);
+                    // console.log(error);
+                })
+            },
+
+            currentPlayersPoll(currentGameId)
+            {
+                this.$api.get("game_players", {
+                    params: {
+                        id: currentGameId
+                    }
+                })
+                .then(response => {
+                    this.currentPlayers = response.data;
+                    setTimeout(() => this.currentPlayersPoll(currentGameId), 5000);
+                })
+                .catch(error => {
+                    setTimeout(() => this.currentPlayersPoll(currentGameId), 2000);
                     // console.log(error);
                 })
             }

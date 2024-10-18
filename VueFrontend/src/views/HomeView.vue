@@ -160,8 +160,8 @@
 { 
     max-height: 200px; 
     overflow-y:auto;
-    scrollbar-width: thin; /* Make scrollbar thin */
-    scrollbar-color: #52D6B5 #FCEEDF; /* Change scrollbar thumb and track colors */
+    scrollbar-width: thin;
+    scrollbar-color: #52D6B5 #FCEEDF;
 }
 
 .spanPad
@@ -207,8 +207,15 @@ h2
 h3 
 {
     font-family: "Jua", cursive;
+    font-size: 24px;
+}
+
+h4 
+{
+    font-family: "Jua", cursive;
     font-size: 12px;
 }
+
 
 .textCenter
 {

@@ -24,9 +24,9 @@ export default {
       </nav> -->
 
 
-  <!-- <RouterView /> -->
+  <RouterView />
   <!-- <HomeView/> -->
-   <RecycleGameView/>
+   <!-- <RecycleGameView/> -->
 </template>
 
 

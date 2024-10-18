@@ -9,8 +9,8 @@
 <script>
 
 export default {
-        
-    }
+   
+}
 
 </script>
 

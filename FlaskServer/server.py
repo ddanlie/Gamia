@@ -206,6 +206,22 @@ def post_create_game_for():
     return jsonify({}), 200
 
 
+@app.route('/api/game_players') 
+def get_game_players(): 
+    game = PlayedGame.query.get(request.args['id'])
+    if game == None:
+        return jsonify({}), 404
+    users = game.users
+    data = [{
+        'id': user.id,
+        'name': user.name,
+        'current_game_id': user.current_game_id,
+        'ready_for_game': user.ready_for_game,
+        'host': user.host,
+    } for user in users]
+
+    return jsonify(data)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
