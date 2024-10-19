@@ -50,6 +50,13 @@
 
     export default {
 
+
+        beforeDestroy() 
+        {
+            for(timeout in this.timeouts)
+                clearTimeout(timeout);
+        },
+
         components: {
             PartyCodeComponent: PartyCodeComponent, 
             PartyUsersComponent: PartyUsersComponent, 
@@ -68,7 +75,8 @@
                 currentGame: "",
                 user: "",
                 currentPlayers: "",
-                errorWarning: ""
+                errorWarning: "",
+                timeouts: []
             }   
         },
 
@@ -84,7 +92,7 @@
                     this.setPLayedGame(this.user.current_game_id);
                 })
                 .catch(error => {
-                    setTimeout(this.setFantomUser, 2000);
+                    this.timeouts.push(setTimeout(this.setFantomUser, 2000));
                     // console.log(error);
                 })
             },
@@ -104,7 +112,7 @@
                     this.currentPlayersPoll(currentGameId);
                 })
                 .catch(error => {
-                    setTimeout(() => this.setPLayedGame(currentGameId), 2000);
+                    this.timeouts.push(setTimeout(() => this.setPLayedGame(currentGameId), 2000));
                     // console.log(error);
                 })
             },
@@ -121,7 +129,7 @@
 
                 })
                 .catch(error => {
-                    setTimeout(setGame, 2000);
+                    this.timeouts.push(setTimeout(setGame, 2000));
                     // console.log(error);
                 })
             },
@@ -135,10 +143,10 @@
                 })
                 .then(response => {
                     this.currentPlayers = response.data;
-                    setTimeout(() => this.currentPlayersPoll(currentGameId), 5000);
+                    this.timeouts.push((() => this.currentPlayersPoll(currentGameId), 5000));
                 })
                 .catch(error => {
-                    setTimeout(() => this.currentPlayersPoll(currentGameId), 2000);
+                    this.timeouts.push(setTimeout(() => this.currentPlayersPoll(currentGameId), 2000));
                     // console.log(error);
                 })
             },
@@ -158,7 +166,7 @@
                 })
                 .catch(error => {
                     this.errorWarning = "Error, cant't disconnect";
-                    setTimeout(()=>{this.errorWarning=""}, 3000);
+                    this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
                 })
             }
         }

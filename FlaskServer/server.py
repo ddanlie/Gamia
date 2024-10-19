@@ -245,8 +245,35 @@ def post_disconnect_player():
     if game.state != 'Finished' and not game.users:
          db.session.delete(game)
          db.session.commit()
+    else:
+        game.users[0].host = True
+        db.session.add(game.users[0])
+        db.session.commit()
 
     return jsonify({}), 200
+
+
+@app.route('/api/join_game', methods=["POST"]) 
+def post_join_game():
+    data = request.get_json()
+    player = Users.query.get(data['userId'])
+    if not player:
+        return jsonify({}), 404
+    
+    game = PlayedGame.query.filter_by(party_code=data['code'].upper(), state='Preparing').first()
+    if not game:
+        return jsonify({}), 404
+
+    player.current_game_id = game.id
+    if(not player.host):#host != None and host != True
+        player.host = False
+    player.ready_for_game = False
+
+    db.session.add(player)
+    db.session.commit()
+
+
+    return jsonify({"routeName": game.game_type.type}), 200
 
 
 if __name__ == '__main__':

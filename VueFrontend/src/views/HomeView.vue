@@ -20,7 +20,7 @@
                         </label>
                     </form>
                 </div>
-                <form  @submit.prevent="handleJoin" class="flex one center">
+                <form  @submit.prevent="this.handleJoin()" class="flex one center">
                     <div class="center third">
                         <h2 class="redColor">Connect</h2>
                         <div class="spanPad">
@@ -51,6 +51,13 @@
 
     export default {
 
+        beforeDestroy() 
+        {
+            for(timeout in this.timeouts)
+                clearTimeout(timeout);
+        },
+
+
         mounted() 
         {
             this.setFantomUser();
@@ -70,13 +77,26 @@
                 privateFlag: false,
                 partyCode: "",
                 errorWarning: "",
+                timeouts: []
             }   
         },
 
         methods: {
             handleJoin()
             {
-
+                this.$api.post("join_game", {
+                        userId: this.user.id,
+                        code: this.partyCode
+                }, {
+                        withCredentials: true
+                })
+                .then(response => {
+                    this.$router.push({ name: response.data.routeName });
+                })
+                .catch(error => {
+                    this.errorWarning = "Error, can't join game";
+                    this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
+                })
             },
 
             setFantomUser()
@@ -87,7 +107,7 @@
                     console.log("Current user = "+this.user['name']);
                 })
                 .catch(error => {
-                    setTimeout(this.setFantomUser, 2000);
+                    this.timeouts.push(setTimeout(this.setFantomUser, 2000));
                     // console.log(error);
                 })
             },
@@ -100,7 +120,7 @@
                     console.log("got all games");
                 })
                 .catch(error => {
-                    setTimeout(this.getAllGames, 2000);
+                    this.timeouts.push(setTimeout(this.getAllGames, 2000));
                     // console.log(error);
                 })
             },
@@ -119,7 +139,7 @@
                     this.gameRouteName = response.data.routeName;
                 })
                 .catch(error => {
-                    setTimeout(() => this.setGameInfo(gameId), 2000);
+                    this.timeouts.push(setTimeout(() => this.setGameInfo(gameId), 2000));
                     // console.log(error)
                 })
             },
@@ -144,7 +164,7 @@
                 })
                 .catch(error => {
                     this.errorWarning = "Error, try again";
-                    setTimeout(()=>{this.errorWarning=""}, 3000);
+                    this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
                 })
             }
         }
