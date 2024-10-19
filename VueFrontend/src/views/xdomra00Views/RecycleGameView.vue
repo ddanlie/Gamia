@@ -65,7 +65,13 @@
 
         mounted() 
         {
+            this.mounted = true;
             this.setUserThenGame();
+        },
+
+        unmounted()
+        {
+            this.mounted = false;
         },
 
         data() 
@@ -77,7 +83,7 @@
                 currentPlayers: "",
                 errorWarning: "",
                 playerIsReady: false,
-                timeouts: []
+                mounted: null
             }   
         },
 
@@ -85,6 +91,8 @@
 
             setUserThenGame()
             {
+                if(!this.mounted)
+                    return;
                 this.$api.get("fantom_user")
                 .then(response => {
                     this.user = response.data;
@@ -93,13 +101,16 @@
                     this.setPLayedGame(this.user.current_game_id);
                 })
                 .catch(error => {
-                    this.timeouts.push(setTimeout(this.setFantomUser, 2000));
+                    setTimeout(this.setFantomUser, 2000);
                     // console.log(error);
                 })
             },
             
             setPLayedGame(currentGameId)
             {
+                if(!this.mounted)
+                    return;
+
                 this.$api.get("played_game", {
                     params: {
                         id: currentGameId
@@ -111,15 +122,18 @@
 
                     this.setGameInfo(this.currentGame.game_id);
                     this.currentPlayersPoll(currentGameId);
+                    this.currentGameLogicPoll(currentGameId);
                 })
                 .catch(error => {
-                    this.timeouts.push(setTimeout(() => this.setPLayedGame(currentGameId), 2000));
+                    setTimeout(() => this.setPLayedGame(currentGameId), 2000);
                     // console.log(error);
                 })
             },
 
             setGameInfo(gameId)
             {
+                if(!this.mounted)
+                    return;
                 this.$api.get("game_info", {
                     params: {
                         id: gameId
@@ -130,13 +144,16 @@
 
                 })
                 .catch(error => {
-                    this.timeouts.push(setTimeout(setGame, 2000));
+                    setTimeout(setGame, 2000);
                     // console.log(error);
                 })
             },
 
             currentPlayersPoll(currentGameId)
             {
+                if(!this.mounted)
+                    return;
+
                 this.$api.get("game_players", {
                     params: {
                         id: currentGameId
@@ -149,7 +166,28 @@
                     // console.log(error);
                 })
                 .finally(() => {
-                    this.timeouts.push(setTimeout(() => this.currentPlayersPoll(currentGameId), 2000));
+                    setTimeout(() => this.currentPlayersPoll(currentGameId), 2000);
+                })
+            },
+
+            currentGameLogicPoll(currentGameId)
+            {
+                if(!this.mounted)
+                    return;
+
+                this.$api.get("played_game_logic", {
+                    params: {
+                        id: currentGameId
+                    }
+                })
+                .then(response => {
+                    this.currentGameLogic = response.data.logic;
+                })
+                .catch(error => {
+                    // console.log(error);
+                })
+                .finally(() => {
+                    setTimeout(() => this.currentPlayersPoll(currentGameId), 500);
                 })
             },
 
@@ -165,7 +203,7 @@
                 })
                 .catch(error => {
                     this.errorWarning = "Error, cant't disconnect";
-                    this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
                 })
             },
 
@@ -181,7 +219,7 @@
                 })
                 .catch(error => {
                     this.errorWarning = "Error";
-                    this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
                 })
             }
         }

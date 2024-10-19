@@ -53,17 +53,22 @@
 
         beforeDestroy() 
         {
-            for(timeout in this.timeouts)
-                clearTimeout(timeout);
+
         },
 
 
         mounted() 
         {
+            this.mounted = true;
             this.setFantomUser();
             this.getAllGames();
 
             
+        },
+
+        unmounted()
+        {
+            this.mounted = false;
         },
 
         data() 
@@ -77,13 +82,15 @@
                 privateFlag: false,
                 partyCode: "",
                 errorWarning: "",
-                timeouts: []
+                mounted: null,
             }   
         },
 
         methods: {
             handleJoin()
             {
+                if(!this.mounted)
+                    return;
                 this.$api.post("join_game", {
                         userId: this.user.id,
                         code: this.partyCode
@@ -95,38 +102,44 @@
                 })
                 .catch(error => {
                     this.errorWarning = "Error, can't join game";
-                    this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
                 })
             },
 
             setFantomUser()
             {
+                if(!this.mounted)
+                    return;
                 this.$api.get("fantom_user")
                 .then(response => {
                     this.user = response.data;
                     console.log("Current user = "+this.user['name']);
                 })
                 .catch(error => {
-                    this.timeouts.push(setTimeout(this.setFantomUser, 2000));
+                    setTimeout(this.setFantomUser, 2000);
                     // console.log(error);
                 })
             },
 
             getAllGames()
             {
+                if(!this.mounted)
+                    return;
                 this.$api.get("all_games")
                 .then(response => {
                     this.allGames = response.data;
                     console.log("got all games");
                 })
                 .catch(error => {
-                    this.timeouts.push(setTimeout(this.getAllGames, 2000));
+                    setTimeout(this.getAllGames, 2000);
                     // console.log(error);
                 })
             },
 
             setGameInfo(gameId)
             {   
+                if(!this.mounted)
+                    return;
                 this.chosenGameId = gameId;
 
                 this.$api.get("game_info", {
@@ -139,7 +152,7 @@
                     this.gameRouteName = response.data.routeName;
                 })
                 .catch(error => {
-                    this.timeouts.push(setTimeout(() => this.setGameInfo(gameId), 2000));
+                    setTimeout(() => this.setGameInfo(gameId), 2000);
                     // console.log(error)
                 })
             },
@@ -152,6 +165,8 @@
 
             createNewGame()
             {
+                if(!this.mounted)
+                    return;
                 this.$api.post("create_game_for", {
                         userId: this.user.id,
                         gameId: this.chosenGameId,
@@ -164,7 +179,7 @@
                 })
                 .catch(error => {
                     this.errorWarning = "Error, try again";
-                    this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
                 })
             }
         }

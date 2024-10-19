@@ -164,10 +164,32 @@ def get_played_game():
         "party_code": game.party_code,
         "private": game.private,
         "name": game.game_ref.type,
-        "data": game.temp_json_data
     }
     return jsonify(data)
        
+
+@app.route('/api/played_game_logic') 
+def get_played_game_logic(): 
+    game = PlayedGame.query.get(request.args['id'])
+    if game == None:
+        return jsonify({}), 404
+    data = {
+        "logic": game.temp_json_data
+    }
+    return jsonify(data)
+
+##Maybe set something more exact - game specific variables
+
+# @app.route('/api/set_played_game_logic', methods=["POST"]) 
+# def post_set_played_game_logic(): 
+#     data = request.get_json()
+#     game = PlayedGame.query.get(data['id'])
+#     if game == None:
+#         return jsonify({}), 404
+#     data = {
+#         "logic": game.temp_json_data
+#     }
+#     return jsonify(data)
 
 
 @app.route('/api/create_game_for', methods=["POST"]) 
