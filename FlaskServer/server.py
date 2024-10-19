@@ -69,13 +69,25 @@ class GameStatistics(db.Model):
 
 def insert_default_games():
     if AllGames.query.count() == 0:
-        game1 = AllGames(type='Riddle', json_data=json.dumps({'src': 'RiddleGameDemonstration.png'}))
+        game1 = AllGames(type='Riddle', json_data=json.dumps({'src': 'RiddleGameDemonstration.png',}))
         game2 = AllGames(type='Recycle', json_data=json.dumps({'src': 'RecycleGameDemonstration.png'}))
 
         db.session.add(game1)
         db.session.add(game2)
 
         db.session.commit()
+
+# def putGameLogic(type, logic):
+#     if type == 'Riddle':
+#         logic['secTimer'] = 30
+
+#         return
+    
+#     if type == 'Recycle':
+#         logic['secTimer'] = 30
+#         logic['allReady']
+#         logic['state'] = ''
+#         return
 
 
 def generate_game_code():
@@ -164,17 +176,7 @@ def get_played_game():
         "party_code": game.party_code,
         "private": game.private,
         "name": game.game_ref.type,
-    }
-    return jsonify(data)
-       
-
-@app.route('/api/played_game_logic') 
-def get_played_game_logic(): 
-    game = PlayedGame.query.get(request.args['id'])
-    if game == None:
-        return jsonify({}), 404
-    data = {
-        "logic": game.temp_json_data
+        "logic": game.temp_json_data#TODO update docs
     }
     return jsonify(data)
 
@@ -315,6 +317,12 @@ def get_toggle_ready():
     db.session.add(player)
     db.session.commit()
 
+    game = player.played_game
+    readyUsers = game.users.query.filter_by(ready_for_game=False).all()
+    if(not readyUsers): #if all users ready (no user with ready=false)
+        game.state = 'Playing'
+        db.session.add(game)
+        db.session.commit()
 
     return jsonify({"ready": player.ready_for_game}), 200
 

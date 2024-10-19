@@ -81,9 +81,10 @@
                 currentGame: "",
                 user: "",
                 currentPlayers: "",
+                currentGame: "",
                 errorWarning: "",
                 playerIsReady: false,
-                mounted: null
+                mounted: undefined
             }   
         },
 
@@ -122,7 +123,7 @@
 
                     this.setGameInfo(this.currentGame.game_id);
                     this.currentPlayersPoll(currentGameId);
-                    this.currentGameLogicPoll(currentGameId);
+                    this.currentGamePoll(currentGameId);
                 })
                 .catch(error => {
                     setTimeout(() => this.setPLayedGame(currentGameId), 2000);
@@ -170,24 +171,24 @@
                 })
             },
 
-            currentGameLogicPoll(currentGameId)
+            currentGamePoll(currentGameId)
             {
                 if(!this.mounted)
                     return;
 
-                this.$api.get("played_game_logic", {
+                this.$api.get("played_game", {
                     params: {
                         id: currentGameId
                     }
                 })
                 .then(response => {
-                    this.currentGameLogic = response.data.logic;
+                    this.currentGame = response.data;
                 })
                 .catch(error => {
                     // console.log(error);
                 })
                 .finally(() => {
-                    setTimeout(() => this.currentPlayersPoll(currentGameId), 500);
+                    setTimeout(() => this.currentGamePoll(currentGameId), 500);
                 })
             },
 
