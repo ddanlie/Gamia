@@ -45,7 +45,7 @@ class PlayedGame(db.Model):
     private = db.Column(db.Boolean, default=False)
     temp_json_data = db.Column(db.String(5000), nullable=True)
 
-    game_type = db.relationship('AllGames', backref='played_games')
+    game_ref = db.relationship('AllGames', backref='played_games')
     players = db.relationship('Users', backref='played_game')
 
     def __repr__(self):
@@ -144,6 +144,7 @@ def get_game_info():
     
     src = url_for('static', filename=f'{json.loads(game.json_data)["src"]}', _external=True)
     data = {
+        'name': game.type,
         'routeName': game.type, 
         'src': src,
     }
@@ -162,6 +163,7 @@ def get_played_game():
         "state": game.state,
         "party_code": game.party_code,
         "private": game.private,
+        "name": game.game_ref.type,
         "data": game.temp_json_data
     }
     return jsonify(data)
@@ -263,6 +265,8 @@ def post_join_game():
     game = PlayedGame.query.filter_by(party_code=data['code'].upper(), state='Preparing').first()
     if not game:
         return jsonify({}), 404
+    
+    ##!!no logic about private game!!. it belongs to random join, not join by code
 
     player.current_game_id = game.id
     if(not player.host):#host != None and host != True
@@ -273,7 +277,24 @@ def post_join_game():
     db.session.commit()
 
 
-    return jsonify({"routeName": game.game_type.type}), 200
+    return jsonify({"routeName": game.game_ref.type}), 200
+
+
+
+
+@app.route('/api/toggle_ready') 
+def get_toggle_ready():
+    player = Users.query.get(request.args['userId'])
+    if not player:
+        return jsonify({}), 404
+    
+    player.ready_for_game = not player.ready_for_game
+
+    db.session.add(player)
+    db.session.commit()
+
+
+    return jsonify({"ready": player.ready_for_game}), 200
 
 
 if __name__ == '__main__':

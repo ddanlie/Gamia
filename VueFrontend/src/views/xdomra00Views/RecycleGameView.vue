@@ -1,6 +1,9 @@
 
 <template>
     <div class="flex one center">
+        <h4 v-if="errorWarning" class="redColor">
+            {{ errorWarning }}
+        </h4>
         <!-- game table -->
         <div class="flex five">
             
@@ -9,22 +12,19 @@
                     <h3 class="blackColor zeroPad">
                         Quit
                     </h3>
-                    <h4 v-if="errorWarning">
-                        {{ errorWarning }}
-                    </h4>
                 </button>
 
             </div>
 
             <!-- main content -->
             <div class="full two-fifth-1500 textCenter infoWrap">
-                <h1 class="greenColor" style="padding:0;">Recycle</h1>
+                <h1 class="greenColor" style="padding:0;">{{this.currentGame.name}}</h1>
                 <img :src="gameDescriptionSrc" style='max-height: 100vh; max-width: 100%; width: 800px; height: 500px; object-fit: contain' :style="{ opacity: gameDescriptionSrc==='' ? '1' : '1'}">
             </div>
 
             <!-- code -->
             <div class="full half-500 fifth-1500 textCenter partyCodeWrap">
-                <PartyCodeComponent :code="currentGame.party_code"/>
+                <PartyCodeComponent :code="currentGame.party_code" :ready="this.playerIsReady" @readyPressed="this.setReady()"/>
             </div>
 
             <!-- chat -->
@@ -76,6 +76,7 @@
                 user: "",
                 currentPlayers: "",
                 errorWarning: "",
+                playerIsReady: false,
                 timeouts: []
             }   
         },
@@ -143,19 +144,17 @@
                 })
                 .then(response => {
                     this.currentPlayers = response.data;
-                    this.timeouts.push((() => this.currentPlayersPoll(currentGameId), 5000));
                 })
                 .catch(error => {
-                    this.timeouts.push(setTimeout(() => this.currentPlayersPoll(currentGameId), 2000));
                     // console.log(error);
+                })
+                .finally(() => {
+                    this.timeouts.push(setTimeout(() => this.currentPlayersPoll(currentGameId), 2000));
                 })
             },
 
             disconnectUser()
             {
-                if(!this.user)
-                    return;
-
                 this.$api.post("disconnect_player", {
                     id: this.user.id
                 }, {
@@ -166,6 +165,22 @@
                 })
                 .catch(error => {
                     this.errorWarning = "Error, cant't disconnect";
+                    this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
+                })
+            },
+
+            setReady()
+            {
+                this.$api.get("toggle_ready", {
+                    params: {
+                        userId: this.user.id
+                    }
+                })
+                .then(response => {
+                    this.playerIsReady = response.data.ready;
+                })
+                .catch(error => {
+                    this.errorWarning = "Error";
                     this.timeouts.push(setTimeout(()=>{this.errorWarning=""}, 3000));
                 })
             }

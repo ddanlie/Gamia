@@ -6,9 +6,9 @@
             <h3 style="padding: 0;">Party code</h3>
             <h1 style="padding: 0;">{{ code }}</h1>
         </div>
-        <button class="two-third greenBack">
+        <button @click="this.$emit('readyPressed')" class="two-third" :class="!ready ? 'greenBack':  'redBack'">
             <h2 class="zeroPad blackColor">
-                Ready
+                {{!ready ? "Ready" : "Cancel"}}
             </h2>
         </button>
     </div>
@@ -19,8 +19,17 @@
 <script>
 
 export default {
-        props: ['code'],
+        props: ['code', 'ready'],
+        data()
+        {
+            return {
+            }
+        },
+    
+        methods: {
+        }
     }
+
 
 </script>
 
