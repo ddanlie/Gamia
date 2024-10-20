@@ -518,9 +518,11 @@ def get_recycle_game_results():
             l1 = len(unit['prompts'])
             l2 = len(unit['generatedSrc'])#assert case
             l3 = len(unit['users'])
-            if(l1 != l2 or l2 != l3):#l1 != l3 - do not need
+            if(l1 != l2 or l2 != l3 or unit['taken']):#l1 != l3 - do not need
                 continue
             results['results'].append(unit)
+
+    return jsonify(results), 200
 #Riddle
 
 
