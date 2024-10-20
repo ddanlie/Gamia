@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import json, random, string
+import uuid
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -44,10 +45,11 @@ class PlayedGame(db.Model):
     party_code = db.Column(db.String(5), nullable=False)
     private = db.Column(db.Boolean, default=False)
     all_ready = db.Column(db.Boolean, default=False)
+    stage = db.Column(db.Integer, nullable=False, default=0)
     temp_json_data = db.Column(db.String(5000), nullable=True)
 
     game_ref = db.relationship('AllGames', backref='played_games')
-    players = db.relationship('Users', backref='played_game')
+    # players = db.relationship('Users', backref='played_game')
 
     def __repr__(self):
         return f'PlayedGame {self.name}'
@@ -78,17 +80,14 @@ def insert_default_games():
 
         db.session.commit()
 
-# def putGameLogic(type, logic):
-#     if type == 'Riddle':
-#         logic['secTimer'] = 30
+def putGameLogic(type, logic):
+    if type == 'Riddle':
+        logic['secTimer'] = 30
 
-#         return
-    
-#     if type == 'Recycle':
-#         logic['secTimer'] = 30
-#         logic['allReady']
-#         logic['state'] = ''
-#         return
+    elif type == 'Recycle':
+        logic['secTimer'] = 30
+        logic['usersSeen'] = 0
+        logic['history'] = []
 
 
 def generate_game_code():
@@ -178,21 +177,19 @@ def get_played_game():
         "private": game.private,
         "name": game.game_ref.type,
         "logic": game.temp_json_data,#TODO update doc
-        "all_ready": game.all_ready#TODO update docs
+        "all_ready": game.all_ready,
+        "srage": game.stage#TODO update docs
     }
     return jsonify(data)
 
-##Maybe set something more exact - game specific variables
-
+#maybe not doing it
 # @app.route('/api/set_played_game_logic', methods=["POST"]) 
 # def post_set_played_game_logic(): 
 #     data = request.get_json()
-#     game = PlayedGame.query.get(data['id'])
+#     game = PlayedGame.query.get(data['gameId'])
 #     if game == None:
 #         return jsonify({}), 404
-#     data = {
-#         "logic": game.temp_json_data
-#     }
+
 #     return jsonify(data)
 
 
@@ -220,10 +217,16 @@ def post_create_game_for():
         game_id=new_game_id, 
         state="Preparing",
         party_code=generate_game_code(),
-        private=is_private
-        all_ready=False)
+        private=is_private,
+        all_ready=False,
+        stage=0)
 
     db.session.add(new_game)
+    db.session.commit()
+
+    logic = {}
+    putGameLogic(new_game.game_ref.type, logic)
+    new_game.temp_json_data = json.dumps(logic)
     db.session.commit()
 
     host.current_game_id = new_game.id
@@ -260,7 +263,7 @@ def post_disconnect_player():
     if not player:
         return jsonify({}), 404
     
-    game = player.played_game
+    game = player.current_played_game
 
     player.current_game_id = None
     player.host = False
@@ -271,13 +274,15 @@ def post_disconnect_player():
 
 
     #delete game if not users left and if game did not finish
-    if game.state != 'Finished' and not game.users:
-         db.session.delete(game)
-         db.session.commit()
-    else:
-        game.users[0].host = True
-        db.session.add(game.users[0])
-        db.session.commit()
+    if game.state != 'Finished':
+        if not game.users:
+            db.session.delete(game)
+            db.session.commit()
+        else:
+            game.users[0].host = True
+            db.session.add(game.users[0])
+            db.session.commit()
+    
 
     return jsonify({}), 200
 
@@ -320,24 +325,23 @@ def get_toggle_ready():
     db.session.add(player)
     db.session.commit()
 
-    game = player.played_game
+    game = player.current_played_game
     allReady = True
     for u in game.users:
-        allReady = allReady and u.ready_for_game 
+        allReady = allReady and u.ready_for_game
+    game.all_ready = allReady        
     if(allReady): #(ifno user with ready=false)
         game.state = 'Playing'
-        game.all_ready = True
-        db.session.add(game)
-        db.session.commit()
-
+    db.session.add(game)
+    db.session.commit()
     return jsonify({"ready": player.ready_for_game}), 200
 
 
 ##TODO: add in docs
-@app.route('/api/unset_all_ready', methods=["POST"]) 
-def post_unset_all_ready():    
+@app.route('/api/set_next_stage', methods=["POST"]) 
+def post_set_next_stage():    
     data = request.get_json() 
-    game = PlayedGame.query.get(data['id'])
+    game = PlayedGame.query.get(data['gameId'])
     if not game:
         return jsonify({}), 404
     
@@ -347,12 +351,89 @@ def post_unset_all_ready():
         u.ready_for_game = False    
     db.session.commit()
 
-
+    game.stage += 1
     game.all_ready = False
     db.session.add(game)
     db.session.commit()
 
     return jsonify({}), 200
+
+
+#general game logic
+
+#returns path to generated image
+
+def generate_image(prompt, uniqueGameId, gameType) -> str:
+    path = './static'
+    if gameType == 'Recycle':
+        path += '/recycleGamesContent'
+    elif gameType == 'Riddle':
+        path += '/riddleGamesContent'
+    
+    path += f'/game-{uniqueGameId}-{uuid.uuid4()}.jpg'
+
+    #TODO: temporary logic untill api connected
+    return "./static/generatedExample.jpg"
+
+#specific game logic
+#Recycle
+
+#Riddle
+
+#specific game logic requests
+#Recycle
+#TODO: add to docs
+#TODO: add get version with instant src rewriting and returning (make reproductable image name (not uuid) - gameId+playerId+...) 
+@app.route('/api/submit_prompt', methods=["POST"]) 
+def post_submit_prompt():
+    data = request.get_json()
+    user = Users.query.get(data['userId'])
+    if not user:
+        return jsonify({}), 404
+    
+    game = user.current_played_game
+    if not game:
+        return jsonify({}), 404
+
+    #generate image by prompt
+    generatedSrc = generate_image(data['prompt'], game.id, game.game_ref.type) 
+    #set logic
+    logic = json.loads(game.temp_json_data)
+
+    #look for last user in "users" history unit - its user who got image to describe
+    #else - create new unit
+    #   last user in unit history has to be unique. this statement is satisfied by promt assignments
+    #   implenemted as derangements. that means each time users get from each other unique images (bijection)
+    #   simplier logic - game is not made for you to describe two images at once. thats why 2 people cant assign you 2 pics
+
+    foundUnit = None
+    for unit in logic['history']:
+        if unit['users'][-1] == int(user.id):
+            foundUnit = unit
+
+    if foundUnit:#we do not put user here because we put him when we chose what other user it takes image to describe from 
+        foundUnit['prompts'].append(str(data['prompt']))
+        foundUnit['generatedSrc'].append(generatedSrc)
+    else:
+        logic['history'].append({
+            "prompts": [data['prompt']], 
+            "generatedSrc": [generatedSrc], 
+            "users": [int(user.id)]})
+        
+    game.temp_json_data = json.dumps(logic)
+
+    db.session.add(game)
+    db.session.commit()
+
+    return jsonify({}), 200
+
+
+@app.route('/api/image_to_describe', methods=["POST"]) 
+def get_image_to_describe():
+    pass
+
+
+#Riddle
 
 
 if __name__ == '__main__':

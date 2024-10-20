@@ -24,7 +24,8 @@
 
             <!-- code -->
             <div class="full half-500 fifth-1500 textCenter partyCodeWrap">
-                <PartyCodeComponent :code="currentGame.party_code" :ready="this.playerIsReady" @readyPressed="this.setReady()"/>
+                <PartyCodeComponent :code="currentGame.party_code" />
+                <ReadyButtonComponent :ready="this.playerIsReady" @readyPressed="this.setReady()"/>
             </div>
 
             <!-- chat -->
@@ -47,6 +48,8 @@
     import PartyCodeComponent from '../../components/xdomra00Comps/PartyCodeComponent.vue';
     import PartyUsersComponent from '../../components/xdomra00Comps/PartyUsersComponent.vue';
     import ChatComponent from '../../components/xivano08Comps/ChatComponent.vue';
+    import ReadyButtonComponent from '../../components/xdomra00Comps/ReadyButtonComponent.vue';
+
 
     export default {
 
@@ -60,7 +63,8 @@
         components: {
             PartyCodeComponent: PartyCodeComponent, 
             PartyUsersComponent: PartyUsersComponent, 
-            ChatComponent: ChatComponent
+            ChatComponent: ChatComponent,
+            ReadyButtonComponent: ReadyButtonComponent
         },
 
         mounted() 
