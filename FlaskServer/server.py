@@ -43,6 +43,7 @@ class PlayedGame(db.Model):
     state = db.Column(db.Enum('Preparing', 'Playing', 'Finished', name='game_states'))  # Enum for game state
     party_code = db.Column(db.String(5), nullable=False)
     private = db.Column(db.Boolean, default=False)
+    all_ready = db.Column(db.Boolean, default=False)
     temp_json_data = db.Column(db.String(5000), nullable=True)
 
     game_ref = db.relationship('AllGames', backref='played_games')
@@ -176,7 +177,8 @@ def get_played_game():
         "party_code": game.party_code,
         "private": game.private,
         "name": game.game_ref.type,
-        "logic": game.temp_json_data#TODO update docs
+        "logic": game.temp_json_data,#TODO update doc
+        "all_ready": game.all_ready#TODO update docs
     }
     return jsonify(data)
 
@@ -218,7 +220,8 @@ def post_create_game_for():
         game_id=new_game_id, 
         state="Preparing",
         party_code=generate_game_code(),
-        private=is_private)
+        private=is_private
+        all_ready=False)
 
     db.session.add(new_game)
     db.session.commit()
@@ -318,13 +321,38 @@ def get_toggle_ready():
     db.session.commit()
 
     game = player.played_game
-    readyUsers = game.users.query.filter_by(ready_for_game=False).all()
-    if(not readyUsers): #if all users ready (no user with ready=false)
+    allReady = True
+    for u in game.users:
+        allReady = allReady and u.ready_for_game 
+    if(allReady): #(ifno user with ready=false)
         game.state = 'Playing'
+        game.all_ready = True
         db.session.add(game)
         db.session.commit()
 
     return jsonify({"ready": player.ready_for_game}), 200
+
+
+##TODO: add in docs
+@app.route('/api/unset_all_ready', methods=["POST"]) 
+def post_unset_all_ready():    
+    data = request.get_json() 
+    game = PlayedGame.query.get(data['id'])
+    if not game:
+        return jsonify({}), 404
+    
+    
+    for u in game.users:
+        db.session.add(u)
+        u.ready_for_game = False    
+    db.session.commit()
+
+
+    game.all_ready = False
+    db.session.add(game)
+    db.session.commit()
+
+    return jsonify({}), 200
 
 
 if __name__ == '__main__':

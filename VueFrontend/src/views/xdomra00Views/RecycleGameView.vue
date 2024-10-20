@@ -1,6 +1,6 @@
 
 <template>
-    <div class="flex one center">
+    <div v-if="this.currentGame" class="flex one center">
         <h4 v-if="errorWarning" class="redColor">
             {{ errorWarning }}
         </h4>
@@ -188,7 +188,7 @@
                     // console.log(error);
                 })
                 .finally(() => {
-                    setTimeout(() => this.currentGamePoll(currentGameId), 500);
+                    setTimeout(() => this.currentGamePoll(currentGameId), 2000);
                 })
             },
 
