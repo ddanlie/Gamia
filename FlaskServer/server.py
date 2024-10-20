@@ -384,8 +384,13 @@ def generate_image(prompt, uniqueGameId, gameType) -> str:
 #Recycle
 #TODO: add to docs
 #TODO: add get version with instant src rewriting and returning (make reproductable image name (not uuid) - gameId+playerId+...) 
-@app.route('/api/submit_prompt', methods=["POST"]) 
-def post_submit_prompt():
+
+submitPromptTrace = 'submit prompt'
+getImageTrace = 'get image'
+trace = 'user{}Called'
+
+@app.route('/api/recycle_submit_prompt', methods=['POST']) 
+def post_recycle_submit_prompt():
     data = request.get_json()
     user = Users.query.get(data['userId'])
     if not user:
@@ -395,10 +400,20 @@ def post_submit_prompt():
     if not game:
         return jsonify({}), 404
 
+    logic = json.loads(game.temp_json_data)
+
+    #protection: if function called wrong number of times - dont react
+    #call rules:  submit_prompt -----> prepare_describing -----> submit_prompt -----> prepare_describing ...
+    userTrace = trace.format(data['userId'])
+    if(not logic.get(userTrace)):#no trace - good, we are first function as it has to be
+        logic[userTrace] = submitPromptTrace
+    elif logic[userTrace] != getImageTrace:#if there is a trace last called has to be "get image" - otherwise error
+       return jsonify({}), 404
+    else:#otherwise make trace - we called "submit prompt"
+        logic[userTrace] = submitPromptTrace
+
     #generate image by prompt
     generatedSrc = generate_image(data['prompt'], game.id, game.game_ref.type) 
-    #set logic
-    logic = json.loads(game.temp_json_data)
 
     #look for last user in "users" history unit - its user who got image to describe
     #else - create new unit
@@ -406,19 +421,22 @@ def post_submit_prompt():
     #   implenemted as derangements. that means each time users get from each other unique images (bijection)
     #   simplier logic - game is not made for you to describe two images at once. thats why 2 people cant assign you 2 pics
 
+    #set logic
     foundUnit = None
     for unit in logic['history']:
-        if unit['users'][-1] == int(user.id):
+        if int(unit['users'][-1]) == int(user.id):
             foundUnit = unit
 
     if foundUnit:#we do not put user here because we put him when we chose what other user it takes image to describe from 
         foundUnit['prompts'].append(str(data['prompt']))
         foundUnit['generatedSrc'].append(generatedSrc)
+        foundUnit['taken'] = False
     else:
         logic['history'].append({
-            "prompts": [data['prompt']], 
-            "generatedSrc": [generatedSrc], 
-            "users": [int(user.id)]})
+            'prompts': [data['prompt']], 
+            'generatedSrc': [generatedSrc], 
+            'users': [int(user.id)],
+            'taken': False})
         
     game.temp_json_data = json.dumps(logic)
 
@@ -427,12 +445,82 @@ def post_submit_prompt():
 
     return jsonify({}), 200
 
+#TODO: add to docs
+@app.route('/api/recycle_prepare_describing') 
+def get_recycle_prepare_describing():
+    user = Users.query.get(request.args['userId'])
+    if not user:
+        return jsonify({}), 404
+    
+    game = user.current_played_game
+    if not game:
+        return jsonify({}), 404
+    
+    logic = json.loads(game.temp_json_data)
 
-@app.route('/api/image_to_describe', methods=["POST"]) 
-def get_image_to_describe():
-    pass
+    #protection
+    #call rules:  submit_prompt -----> prepare_describing -----> submit_prompt -----> prepare_describing ...
+    userTrace = trace.format(request.args['userId'])
+   
+    #1. call order
+    if(not logic.get(userTrace)):#no trace - bad, we are not the first function user had to call
+        return jsonify({}), 404
+    elif logic[userTrace] != submitPromptTrace:#trace is present but specified wrong - bad
+       return jsonify({}), 404
+    else:#if order is ok we modify trace
+        logic[userTrace] = getImageTrace
 
 
+    #2. do not include other bad call orders to search
+    foundUnit = None
+    lastChanceUnit = None
+    for unit in logic['history']:
+        l1 = len(unit['prompts'])
+        l2 = len(unit['generatedSrc'])#assert case
+        l3 = len(unit['users'])
+        if(l1 != l2 or l2 != l3 or unit['taken']):#l1 != l3 - do not need
+            continue
+        elif(int(unit['users'][-1]) == int(user.id)):
+            lastChanceUnit = unit
+        else:
+            foundUnit = unit
+            unit['taken'] = True
+            break
+
+    src = None
+    if foundUnit:
+        foundUnit['users'].append(int(user.id))
+        src = foundUnit['generatedSrc'][-1]
+    else:
+        lastChanceUnit['users'].append(int(user.id))
+        src = lastChanceUnit['generatedSrc'][-1]
+
+    game.temp_json_data = json.dumps(logic)
+    db.session.add(game)
+    db.session.commit()
+
+    return jsonify({"src": src}), 200
+
+
+
+#TODO: add to docs
+@app.route('/api/recycle_game_results') 
+def get_recycle_game_results():
+    game = PlayedGame.query.get(request.args['gameId'])
+    if not game:
+        return jsonify({}), 404
+    
+    results = {'results':[]}
+    logic = json.loads(game.temp_json_data)
+    #protection
+    #do not include bad call orders to results
+    for unit in logic['history']:
+            l1 = len(unit['prompts'])
+            l2 = len(unit['generatedSrc'])#assert case
+            l3 = len(unit['users'])
+            if(l1 != l2 or l2 != l3):#l1 != l3 - do not need
+                continue
+            results['results'].append(unit)
 #Riddle
 
 
