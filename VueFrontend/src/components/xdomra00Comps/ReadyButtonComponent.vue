@@ -2,26 +2,44 @@
 
 
 <template>
-
-        <button @click="this.$emit('readyPressed')" class="two-third" :class="!ready ? 'greenBack':  'redBack'">
-            <h2 class="zeroPad blackColor">
-                {{!ready ? "Ready" : "Cancel"}}
-            </h2>
-        </button>
-
+    <button @click="btnClicked()" :class="!this.ready ? 'greenBack':  'redBack'" 
+    :disabled="this.loading"
+    :style="this.loading ? 'opacity:0.5;' :'opacity:1;'">
+        <h2 class="zeroPad blackColor">
+            {{!this.ready ? "Ready" : "Cancel"}}
+        </h2>
+    </button>
 </template>
 
 
 <script>
     export default {
-        props: ['ready'],
+        props: {
+            ready: {
+                required: true
+            }
+        },
         data()
         {
             return {
+                loading: false
+            }
+        },  
+        watch: {
+            ready(newval)
+            {
+                this.loading = false;
             }
         },
 
         methods: {
+
+            btnClicked()
+            {
+                this.loading = true;
+
+                this.$emit('readyPressed');
+            }
         }
     }
 </script>

@@ -178,7 +178,7 @@ def get_played_game():
         "name": game.game_ref.type,
         "logic": game.temp_json_data,#TODO update doc
         "all_ready": game.all_ready,
-        "srage": game.stage#TODO update docs
+        "stage": game.stage#TODO update docs
     }
     return jsonify(data)
 
@@ -320,12 +320,16 @@ def get_toggle_ready():
     if not player:
         return jsonify({}), 404
     
-    player.ready_for_game = not player.ready_for_game
+    game = player.current_played_game
+    if not game:
+        return jsonify({}), 404
 
+
+    player.ready_for_game = not player.ready_for_game
     db.session.add(player)
     db.session.commit()
 
-    game = player.current_played_game
+    
     allReady = True
     for u in game.users:
         allReady = allReady and u.ready_for_game
@@ -334,7 +338,9 @@ def get_toggle_ready():
         game.state = 'Playing'
     db.session.add(game)
     db.session.commit()
-    return jsonify({"ready": player.ready_for_game}), 200
+
+    #TODO: user.ready is not returned anymore
+    return jsonify({}), 200
 
 
 ##TODO: add in docs
@@ -373,7 +379,10 @@ def generate_image(prompt, uniqueGameId, gameType) -> str:
     path += f'/game-{uniqueGameId}-{uuid.uuid4()}.jpg'
 
     #TODO: temporary logic untill api connected
-    return "./static/generatedExample.jpg"
+    path =  "generatedExample.jpg"
+    src = url_for('static', filename=path, _external=True)
+    
+    return src
 
 #specific game logic
 #Recycle

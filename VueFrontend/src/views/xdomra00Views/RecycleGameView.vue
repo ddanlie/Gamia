@@ -5,6 +5,7 @@
             {{ errorWarning }}
         </h4>
         <!-- game table -->
+        
         <div class="flex five">
             
             <div class="full">
@@ -13,23 +14,35 @@
                         Quit
                     </h3>
                 </button>
-
             </div>
+
 
             <!-- main content -->
-            <div class="full two-fifth-1500 textCenter infoWrap">
-                <h1 class="greenColor" style="padding:0;">{{this.currentGame.name}}</h1>
-                <img :src="gameDescriptionSrc" style='max-height: 100vh; max-width: 100%; width: 800px; height: 500px; object-fit: contain' :style="{ opacity: gameDescriptionSrc==='' ? '1' : '1'}">
-            </div>
+            <template  v-if="this.currentGame.stage == 0">
+                <div class="full two-fifth-1500 textCenter infoWrap">
+                    <h1 class="greenColor" style="padding:0;">{{this.currentGame.name}}</h1>
+                    <img :src="gameDescriptionSrc" style='max-height: 100vh; max-width: 100%; width: 800px; height: 500px; object-fit: contain' :style="{ opacity: gameDescriptionSrc==='' ? '1' : '1'}">
+                </div>
+    
+                <!-- code -->
+                <div class="full half-1000 fifth-1500 textCenter partyCodeWrap">
+                    <PartyCodeComponent :code="currentGame.party_code" />
+                    <ReadyButtonComponent class="full off-third-500 third-500 off-sixth-1000 two-third-1000" :ready="this.playerIsReady" @readyPressed="this.setReady()"/>
+                </div>
+            </template>
 
-            <!-- code -->
-            <div class="full half-500 fifth-1500 textCenter partyCodeWrap">
-                <PartyCodeComponent :code="currentGame.party_code" />
-                <ReadyButtonComponent :ready="this.playerIsReady" @readyPressed="this.setReady()"/>
-            </div>
+            <template v-if="this.currentGame.stage == 1">
+                <div class="full off-none-1000 half-1000 three-fifth-1500 textCenter promptStageWrap">
+                    <h1 class="greenColor" style="padding:0; margin-bottom: 2%;">{{this.currentGame.name}}</h1>
+                    <TimeoutWritingComponent class="full off-fourth-500 half-500 off-third-1500 third-1500" :timeToWait="this.currentGame.logic.secTimer"/>
+                    <ReadyButtonComponent style="margin-top: 5%;" :ready="this.playerIsReady" @readyPressed="this.setReady()"/>
+                </div>
+                <!-- "full off-third-1000 third-1000" -->
+                <!-- class="off-two-fifth-1500 fifth-1500"  -->
+            </template>
 
             <!-- chat -->
-            <div class="full half-500 off-none-1500 fifth-1500 chatWrap">
+            <div class="full off-fourth-500 half-500 off-none-1000 off-none-1500 fifth-1500 chatWrap">
                 <ChatComponent/>
             </div>
             <!-- players -->
@@ -49,7 +62,7 @@
     import PartyUsersComponent from '../../components/xdomra00Comps/PartyUsersComponent.vue';
     import ChatComponent from '../../components/xivano08Comps/ChatComponent.vue';
     import ReadyButtonComponent from '../../components/xdomra00Comps/ReadyButtonComponent.vue';
-
+    import TimeoutWritingComponent from '../../components/xdomra00Comps/TimeoutWritingComponent.vue';
 
     export default {
 
@@ -64,7 +77,8 @@
             PartyCodeComponent: PartyCodeComponent, 
             PartyUsersComponent: PartyUsersComponent, 
             ChatComponent: ChatComponent,
-            ReadyButtonComponent: ReadyButtonComponent
+            ReadyButtonComponent: ReadyButtonComponent,
+            TimeoutWritingComponent: TimeoutWritingComponent
         },
 
         mounted() 
@@ -87,9 +101,34 @@
                 currentPlayers: "",
                 currentGame: "",
                 errorWarning: "",
-                playerIsReady: false,
+                playerIsReady: undefined,
                 mounted: undefined
             }   
+        },
+
+        watch: {
+            currentGame(newInfo, oldInfo)
+            {
+                if(newInfo.all_ready)
+                {
+                    this.$api.post("set_next_stage", {
+                        gameId: this.currentGame.id,
+                        timeout: 1000
+                    }, {
+                        withCredentials: true
+                    })
+                    .then(response => {
+                        
+                    })
+                    .catch(error => {
+                        this.errorWarning = "Game error";
+                        setTimeout(()=>{this.errorWarning=""}, 3000);
+                    })
+                }
+            }
+        },
+
+        computed: {
         },
 
         methods: {
@@ -166,6 +205,15 @@
                 })
                 .then(response => {
                     this.currentPlayers = response.data;
+
+                    for(let player of this.currentPlayers)
+                    {
+                        if(this.user.id == player.id)
+                        {
+                            this.playerIsReady = player.ready_for_game;
+                            break;
+                        }
+                    }
                 })
                 .catch(error => {
                     // console.log(error);
@@ -192,7 +240,7 @@
                     // console.log(error);
                 })
                 .finally(() => {
-                    setTimeout(() => this.currentGamePoll(currentGameId), 2000);
+                    setTimeout(() => this.currentGamePoll(currentGameId), 1000);
                 })
             },
 
@@ -216,11 +264,8 @@
             {
                 this.$api.get("toggle_ready", {
                     params: {
-                        userId: this.user.id
+                        userId: this.user.id,
                     }
-                })
-                .then(response => {
-                    this.playerIsReady = response.data.ready;
                 })
                 .catch(error => {
                     this.errorWarning = "Error";
@@ -241,13 +286,22 @@
     min-height: 650px;
 }
 
+.promptStageWrap
+{
+    margin-left: 13%;
+    min-height: 650px;
+}
+
+
+
 @media(max-width:1500px)
 {
-    .infoWrap
+    .infoWrap, .promptStageWrap
     {
         margin-left: 0;
     }
 }
+
 
 .partyUsersWrap
 {
