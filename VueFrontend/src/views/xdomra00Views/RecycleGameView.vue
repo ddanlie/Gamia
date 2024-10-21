@@ -27,18 +27,51 @@
                 <!-- code -->
                 <div class="full half-1000 fifth-1500 textCenter partyCodeWrap">
                     <PartyCodeComponent :code="currentGame.party_code" />
-                    <ReadyButtonComponent class="full off-third-500 third-500 off-sixth-1000 two-third-1000" :ready="this.playerIsReady" @readyPressed="this.setReady()"/>
+                    <ReadyButtonComponent
+                        class="full off-third-500 third-500 off-sixth-1000 two-third-1000"
+                        :ready="this.playerIsReady"
+                        @readyPressed="this.setReady()"/>
                 </div>
             </template>
 
             <template v-if="this.currentGame.stage == 1">
                 <div class="full off-none-1000 half-1000 three-fifth-1500 textCenter promptStageWrap">
                     <h1 class="greenColor" style="padding:0; margin-bottom: 2%;">{{this.currentGame.name}}</h1>
-                    <TimeoutWritingComponent class="full off-fourth-500 half-500 off-third-1500 third-1500" :timeToWait="this.currentGame.logic.secTimer"/>
-                    <ReadyButtonComponent style="margin-top: 5%;" :ready="this.playerIsReady" @readyPressed="this.setReady()"/>
+                    <TimeoutWritingComponent 
+                        @timeOut="this.setReady()"
+                        @promptReady="(p) => {this.prompt = p;}"
+                        :secondsToWait="this.currentGame.logic.secTimer" 
+                        class="full off-fourth-500 half-500 off-third-1500 third-1500"/>
+                    <ReadyButtonComponent  
+                        @readyPressed="this.setReady()"  
+                        :ready="this.playerIsReady"
+                        style="margin-top: 5%;"/>
                 </div>
-                <!-- "full off-third-1000 third-1000" -->
-                <!-- class="off-two-fifth-1500 fifth-1500"  -->
+            </template>
+
+            <template v-if="this.currentGame.stage >= 2" :key="this.currentGame.stage">
+                <div class="full fifth-1500 textCenter imgWrap">
+                    <img :src="this.describedImgSrc" 
+                        style='max-height: 100vh; max-width: 100%; width: 400px; height: 400px; 
+                        object-fit: contain' :style="{ opacity: describedImgSrc==='' ? '1' : '1'}">
+                </div>
+                <div class="full off-none-1000 half-1000 two-fifth-1500 textCenter"
+                    style="margin-left: 0%;">
+                    <h1 class="greenColor" style="padding:0; margin-bottom: 2%;">{{this.currentGame.name}}</h1>
+                    <TimeoutWritingComponent 
+                        @timeOut="this.setReady()"
+                        @promptReady="(p) => {this.prompt = p;}"
+                        :secondsToWait="this.currentGame.logic.secTimer" 
+                        class="full off-fourth-500 half-500 off-fourth-1500 half-1500"/>
+                    <ReadyButtonComponent  
+                        @readyPressed="this.setReady()"  
+                        :ready="this.playerIsReady"
+                        style="margin-top: 5%;"/>
+                </div>
+            </template>
+
+            <template v-if="this.currentGame.state == 'Finished'">
+                Game finished
             </template>
 
             <!-- chat -->
@@ -99,32 +132,30 @@
                 currentGame: "",
                 user: "",
                 currentPlayers: "",
-                currentGame: "",
                 errorWarning: "",
                 playerIsReady: undefined,
+                prompt: "",
+                describedImgSrc: "",
                 mounted: undefined
+                
             }   
         },
 
         watch: {
-            currentGame(newInfo, oldInfo)
+            'currentGame.stage'(newInfo, oldInfo)
             {
-                if(newInfo.all_ready)
+                //stage 0 - preparation
+                //stage 1 - prompts
+                //stage 2 - submit prompts
+                if(newInfo >= 2 && (newInfo != oldInfo) && oldInfo)
                 {
-                    this.$api.post("set_next_stage", {
-                        gameId: this.currentGame.id,
-                        timeout: 1000
-                    }, {
-                        withCredentials: true
-                    })
-                    .then(response => {
-                        
-                    })
-                    .catch(error => {
-                        this.errorWarning = "Game error";
-                        setTimeout(()=>{this.errorWarning=""}, 3000);
-                    })
+                    console.log("old - "+oldInfo+" new - "+newInfo);
+                    this.submitPrompt();
+                    // this.prepareDescribing();
                 }
+
+                // if(newInfo.stage >= 3)
+                //     this.finishGame()
             }
         },
 
@@ -162,6 +193,7 @@
                 })
                 .then(response => {
                     this.currentGame = response.data;
+                    this.currentGame.logic = JSON.parse(this.currentGame.logic);
                     console.log("2. Current game = "+JSON.stringify(this.currentGame));
 
                     this.setGameInfo(this.currentGame.game_id);
@@ -235,6 +267,7 @@
                 })
                 .then(response => {
                     this.currentGame = response.data;
+                    this.currentGame.logic = JSON.parse(this.currentGame.logic);
                 })
                 .catch(error => {
                     // console.log(error);
@@ -271,6 +304,22 @@
                     this.errorWarning = "Error";
                     setTimeout(()=>{this.errorWarning=""}, 3000);
                 })
+            },
+
+
+            submitPrompt()
+            {
+                this.$api.post("recycle_submit_prompt", {
+                    userId: this.user.id,
+                    prompt: this.prompt,
+                    timeout: 20000
+                }, {
+                    withCredentials: true
+                })
+                .catch(error => {
+                    this.errorWarning = "Game error";
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
+                })
             }
         }
     }
@@ -292,11 +341,16 @@
     min-height: 650px;
 }
 
+.imgWrap
+{
+    margin-left:13%; 
+    margin-top: 5%;
+}
 
 
 @media(max-width:1500px)
 {
-    .infoWrap, .promptStageWrap
+    .infoWrap, .promptStageWrap, .imgWrap
     {
         margin-left: 0;
     }

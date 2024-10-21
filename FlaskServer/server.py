@@ -44,7 +44,6 @@ class PlayedGame(db.Model):
     state = db.Column(db.Enum('Preparing', 'Playing', 'Finished', name='game_states'))  # Enum for game state
     party_code = db.Column(db.String(5), nullable=False)
     private = db.Column(db.Boolean, default=False)
-    all_ready = db.Column(db.Boolean, default=False)
     stage = db.Column(db.Integer, nullable=False, default=0)
     temp_json_data = db.Column(db.String(5000), nullable=True)
 
@@ -72,7 +71,7 @@ class GameStatistics(db.Model):
 
 def insert_default_games():
     if AllGames.query.count() == 0:
-        game1 = AllGames(type='Riddle', json_data=json.dumps({'src': 'RiddleGameDemonstration.png',}))
+        game1 = AllGames(type='Riddle', json_data=json.dumps({'src': 'RiddleGameDemonstration.png'}))
         game2 = AllGames(type='Recycle', json_data=json.dumps({'src': 'RecycleGameDemonstration.png'}))
 
         db.session.add(game1)
@@ -177,7 +176,6 @@ def get_played_game():
         "private": game.private,
         "name": game.game_ref.type,
         "logic": game.temp_json_data,#TODO update doc
-        "all_ready": game.all_ready,
         "stage": game.stage#TODO update docs
     }
     return jsonify(data)
@@ -218,7 +216,6 @@ def post_create_game_for():
         state="Preparing",
         party_code=generate_game_code(),
         private=is_private,
-        all_ready=False,
         stage=0)
 
     db.session.add(new_game)
@@ -333,36 +330,26 @@ def get_toggle_ready():
     allReady = True
     for u in game.users:
         allReady = allReady and u.ready_for_game
-    game.all_ready = allReady        
-    if(allReady): #(ifno user with ready=false)
-        game.state = 'Playing'
-    db.session.add(game)
-    db.session.commit()
+               
+    if(allReady):
+        set_next_stage(game)
 
     #TODO: user.ready is not returned anymore
     return jsonify({}), 200
 
 
-##TODO: add in docs
-@app.route('/api/set_next_stage', methods=["POST"]) 
-def post_set_next_stage():    
-    data = request.get_json() 
-    game = PlayedGame.query.get(data['gameId'])
-    if not game:
-        return jsonify({}), 404
-    
-    
+def set_next_stage(game):    
+    game.state = 'Playing'
     for u in game.users:
         db.session.add(u)
         u.ready_for_game = False    
     db.session.commit()
 
     game.stage += 1
-    game.all_ready = False
+
     db.session.add(game)
     db.session.commit()
 
-    return jsonify({}), 200
 
 
 #general game logic
