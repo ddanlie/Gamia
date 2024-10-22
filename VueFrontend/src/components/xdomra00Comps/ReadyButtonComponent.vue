@@ -22,14 +22,15 @@
         data()
         {
             return {
-                loading: false
+                loading: false,
             }
         },  
+
         watch: {
             ready(newval)
             {
                 this.loading = false;
-            }
+            },
         },
 
         methods: {
@@ -37,7 +38,6 @@
             btnClicked()
             {
                 this.loading = true;
-
                 this.$emit('readyPressed');
             }
         }

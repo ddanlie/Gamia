@@ -29,14 +29,24 @@
             }
         },
 
-        created()
+        mounted()
         {
-            return;
-            if(this.secondsToWait)
+            let tl = localStorage.getItem("timeLeft");
+            if(tl)
+            {
+                this.timeLeft = tl-1 >= 0 ? tl-1 : tl;
+            }
+            else if(this.secondsToWait)
             {
                 this.timeLeft = this.secondsToWait;
-                this.counterInterval = setInterval(this.timeCounter, 1000);
             }   
+            this.counterInterval = setInterval(this.timeCounter, 1000);
+        },
+
+        unmounted()
+        {
+            localStorage.removeItem("timeLeft");
+            clearInterval(this.counterInterval);
         },
 
         data() 
@@ -45,7 +55,7 @@
                 timeLeft: 0,
                 prompt: "",
                 mounted: false,
-                counterInterval: null
+                counterInterval: null,
             }
         },
 
@@ -56,11 +66,13 @@
                 if(this.timeLeft <= 0)
                 {
                     clearInterval(this.counterInterval);
+                    localStorage.removeItem("timeLeft");
                     this.$emit('timeOut'); 
                     return;
                 }
 
                 this.timeLeft--;
+                localStorage.setItem("timeLeft", this.timeLeft);
             }
         },
 
@@ -78,7 +90,9 @@
                 return tl % 60; 
             }
 
-        } 
+        }, 
+
+        
     }
 
 </script>

@@ -49,7 +49,7 @@
                 </div>
             </template>
 
-            <template v-if="this.currentGame.stage >= 2" :key="this.currentGame.stage">
+            <template v-if="this.currentGame.stage >= 2 && this.currentGame.state=='Playing'" :key="this.currentGame.stage" >
                 <div class="full fifth-1500 textCenter imgWrap">
                     <img :src="this.describedImgSrc" 
                         style='max-height: 100vh; max-width: 100%; width: 400px; height: 400px; 
@@ -58,12 +58,12 @@
                 <div class="full off-none-1000 half-1000 two-fifth-1500 textCenter"
                     style="margin-left: 0%;">
                     <h1 class="greenColor" style="padding:0; margin-bottom: 2%;">{{this.currentGame.name}}</h1>
-                    <TimeoutWritingComponent 
+                    <TimeoutWritingComponent :key="this.currentGame.stage" 
                         @timeOut="this.setReady()"
                         @promptReady="(p) => {this.prompt = p;}"
                         :secondsToWait="this.currentGame.logic.secTimer" 
                         class="full off-fourth-500 half-500 off-fourth-1500 half-1500"/>
-                    <ReadyButtonComponent  
+                    <ReadyButtonComponent :key="this.currentGame.stage"
                         @readyPressed="this.setReady()"  
                         :ready="this.playerIsReady"
                         style="margin-top: 5%;"/>
@@ -136,26 +136,32 @@
                 playerIsReady: undefined,
                 prompt: "",
                 describedImgSrc: "",
-                mounted: undefined
-                
+                mounted: undefined,
+
+                maxStages: 5//min - 2
             }   
         },
 
         watch: {
             'currentGame.stage'(newInfo, oldInfo)
             {
+                let finish = false;
+                if(newInfo >= this.maxStages && this.currentGame.state != 'Finished')
+                {
+                    finish = true;
+                }
                 //stage 0 - preparation
                 //stage 1 - prompts
-                //stage 2 - submit prompts
+                //stage 2 - describe prompts
                 if(newInfo >= 2 && (newInfo != oldInfo) && oldInfo)
                 {
-                    console.log("old - "+oldInfo+" new - "+newInfo);
-                    this.submitPrompt();
-                    // this.prepareDescribing();
+                    this.submitPrompt(!finish);
                 }
 
-                // if(newInfo.stage >= 3)
-                //     this.finishGame()
+                if(finish)
+                    this.finishGame()
+
+                
             }
         },
 
@@ -268,6 +274,7 @@
                 .then(response => {
                     this.currentGame = response.data;
                     this.currentGame.logic = JSON.parse(this.currentGame.logic);
+                    console.log("3. Current game = "+JSON.stringify(this.currentGame));
                 })
                 .catch(error => {
                     // console.log(error);
@@ -307,18 +314,54 @@
             },
 
 
-            submitPrompt()
+            submitPrompt(getNextPicture=true)
             {
                 this.$api.post("recycle_submit_prompt", {
                     userId: this.user.id,
                     prompt: this.prompt,
-                    timeout: 20000
+                }, {
+                    withCredentials: true,
+                    timeout: 10000
+                })
+                .then(response => {
+                    if(getNextPicture)
+                        this.getPictureToDescribe();
+                })
+                .catch(error => {
+                    this.errorWarning = "Submit error";
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
+                })
+            },
+
+            getPictureToDescribe()
+            {
+                this.$api.get("recycle_prepare_describing", {
+                    params: {
+                        userId: this.user.id,
+                    },
+                    timeout: 10000
+                })
+                .then(response => {
+                    this.describedImgSrc = response.data.src; 
+                })
+                .catch(error => {
+                    this.errorWarning = "Error, could not get image";
+                    setTimeout(()=>{this.errorWarning=""}, 3000);
+                })
+            },
+
+            finishGame()
+            {
+                if(!this.mounted)
+                    return;
+
+                this.$api.post("finish_game", {
+                    id: this.currentGame.id
                 }, {
                     withCredentials: true
                 })
                 .catch(error => {
-                    this.errorWarning = "Game error";
-                    setTimeout(()=>{this.errorWarning=""}, 3000);
+                    setTimeout(this.finishGame, 300);
                 })
             }
         }

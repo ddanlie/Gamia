@@ -81,11 +81,10 @@ def insert_default_games():
 
 def putGameLogic(type, logic):
     if type == 'Riddle':
-        logic['secTimer'] = 30
+        logic['secTimer'] = 50
 
     elif type == 'Recycle':
-        logic['secTimer'] = 30
-        logic['usersSeen'] = 0
+        logic['secTimer'] = 50
         logic['history'] = []
 
 
@@ -108,10 +107,11 @@ with app.app_context():
 @app.route('/api/fantom_user') 
 def get_fantom_user():
     id = request.cookies.get('userId')
-
-    if id != None:
-        fantom_user = Users.query.get(id)
-    else:
+    fantom_user = None
+    if id:
+        fantom_user = Users.query.get(int(id))
+    
+    if not fantom_user:
         fantom_user = Users(name='user#', fantom=True)
         db.session.add(fantom_user)
         db.session.commit()
@@ -125,7 +125,6 @@ def get_fantom_user():
     }
 
     response = jsonify(user_data)
-    #cookie is set by client
     response.set_cookie('userId', value=str(user_data['id']))
 
 
@@ -351,6 +350,19 @@ def set_next_stage(game):
     db.session.commit()
 
 
+@app.route('/api/finish_game', methods=["POST"]) 
+def post_finish_game():
+    data = request.get_json()
+    game = PlayedGame.query.get(data['id'])
+    if not game:
+        return jsonify({}), 404
+
+    if(game.state != 'Finished'):
+        game.state = 'Finished'
+        db.session.add(game)
+        db.session.commit()
+
+    return jsonify({}), 200
 
 #general game logic
 
@@ -446,10 +458,12 @@ def post_recycle_submit_prompt():
 def get_recycle_prepare_describing():
     user = Users.query.get(request.args['userId'])
     if not user:
+        #print("PREP DESC USER 404")
         return jsonify({}), 404
     
     game = user.current_played_game
     if not game:
+        #print("PREP DESC GAME 404")
         return jsonify({}), 404
     
     logic = json.loads(game.temp_json_data)
@@ -460,8 +474,10 @@ def get_recycle_prepare_describing():
    
     #1. call order
     if(not logic.get(userTrace)):#no trace - bad, we are not the first function user had to call
+        print("PREP DESC NOTRACE 404"+f" {game.temp_json_data}")
         return jsonify({}), 404
     elif logic[userTrace] != submitPromptTrace:#trace is present but specified wrong - bad
+       #print("PREP DESC WRONGTRACE 404")
        return jsonify({}), 404
     else:#if order is ok we modify trace
         logic[userTrace] = getImageTrace
@@ -519,6 +535,9 @@ def get_recycle_game_results():
             results['results'].append(unit)
 
     return jsonify(results), 200
+
+
+
 #Riddle
 
 
