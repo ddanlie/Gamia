@@ -125,7 +125,7 @@ def get_fantom_user():
     }
 
     response = jsonify(user_data)
-    response.set_cookie('userId', value=str(user_data['id']))
+    response.set_cookie('userId', value=str(user_data['id']), secure=False)
 
 
     return response
@@ -326,7 +326,7 @@ def get_toggle_ready():
     db.session.commit()
 
     
-    allReady = True
+    allReady = player.ready_for_game
     for u in game.users:
         allReady = allReady and u.ready_for_game
                
@@ -444,6 +444,7 @@ def post_recycle_submit_prompt():
             'prompts': [data['prompt']], 
             'generatedSrc': [generatedSrc], 
             'users': [int(user.id)],
+            'names': [str(user.name)],
             'taken': False})
         
     game.temp_json_data = json.dumps(logic)
@@ -502,9 +503,11 @@ def get_recycle_prepare_describing():
     src = None
     if foundUnit:
         foundUnit['users'].append(int(user.id))
+        foundUnit['names'].append(str(user.name))
         src = foundUnit['generatedSrc'][-1]
     else:
         lastChanceUnit['users'].append(int(user.id))
+        lastChanceUnit['names'].append(str(user.name))
         src = lastChanceUnit['generatedSrc'][-1]
 
     game.temp_json_data = json.dumps(logic)
@@ -542,4 +545,4 @@ def get_recycle_game_results():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)

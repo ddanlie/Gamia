@@ -9,7 +9,7 @@
                     <h2 class="redColor">Games</h2>
                     <ul class="menuUl">
                         <li v-for="game in allGames" :key="game.id" >
-                            <button type="submit" for="createGameForm" @click="createNewGame()" @mouseover="setGameInfo(game.id)" @mouseleave="emptyGameDescription()" class="fourth redColor menuButton" style="font-size: 24px;">{{ game.name }}</button>
+                            <button type="submit" for="createGameForm" @click="createNewGame()" @mouseover="setGameInfo(game.id)" class="fourth redColor menuButton" style="font-size: 24px;">{{ game.name }}</button>
                         </li>
                     </ul>
                     <h3 v-if="errorWarning != ''" style="color:red;">{{ errorWarning }}</h3>

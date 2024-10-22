@@ -71,7 +71,9 @@
             </template>
 
             <template v-if="this.currentGame.state == 'Finished'">
-                Game finished
+                <div class="half resultsWrap">
+                    <RecycleResultsComponent :gameId="this.currentGame.id"/>
+                </div>
             </template>
 
             <!-- chat -->
@@ -96,6 +98,7 @@
     import ChatComponent from '../../components/xivano08Comps/ChatComponent.vue';
     import ReadyButtonComponent from '../../components/xdomra00Comps/ReadyButtonComponent.vue';
     import TimeoutWritingComponent from '../../components/xdomra00Comps/TimeoutWritingComponent.vue';
+    import RecycleResultsComponent from '../../components/xdomra00Comps/RecycleResultsComponent.vue';
 
     export default {
 
@@ -111,7 +114,8 @@
             PartyUsersComponent: PartyUsersComponent, 
             ChatComponent: ChatComponent,
             ReadyButtonComponent: ReadyButtonComponent,
-            TimeoutWritingComponent: TimeoutWritingComponent
+            TimeoutWritingComponent: TimeoutWritingComponent,
+            RecycleResultsComponent: RecycleResultsComponent,
         },
 
         mounted() 
@@ -138,7 +142,7 @@
                 describedImgSrc: "",
                 mounted: undefined,
 
-                maxStages: 5//min - 2
+                maxStages: 3//min - 2
             }   
         },
 
@@ -155,6 +159,7 @@
                 //stage 2 - describe prompts
                 if(newInfo >= 2 && (newInfo != oldInfo) && oldInfo)
                 {
+                    console.log("NEW STAGE "+newInfo+" Finish: "+finish);
                     this.submitPrompt(!finish);
                 }
 
@@ -363,7 +368,7 @@
                 .catch(error => {
                     setTimeout(this.finishGame, 300);
                 })
-            }
+            },
         }
     }
 
@@ -388,6 +393,11 @@
 {
     margin-left:13%; 
     margin-top: 5%;
+}
+
+.resultsWrap
+{
+
 }
 
 
