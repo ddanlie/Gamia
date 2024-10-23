@@ -18,7 +18,14 @@
         props: {
             secondsToWait : {
                 type: Number,
-                required: false
+                required: false,
+                default: 20
+            },
+            
+            newTimer: {
+                type: Boolean,
+                required: false,
+                default: true
             },
 
             textVal: {
@@ -36,25 +43,38 @@
 
         mounted()
         {
+            window.addEventListener('beforeunload', this.unloaded);
+            // localStorage.setItem("arrivetime", Date());
             setTimeout(()=>{this.doTansition=true; setTimeout(()=>{this.doTansition = false;}, 100)}, 100);
-            let tl = localStorage.getItem("timeLeft");
-            if(tl)
+            let tl =  localStorage.getItem("timeLeft");
+            let lt = localStorage.getItem("leaveTime");
+            
+            console.log("TIMER MOUNT: NEW "+this.newTimer+" TIME LEFT "+tl+" LAST LEAVE TIME "+lt);
+            if(!this.newTimer && lt && tl)
             {
-                this.timeLeft = tl-1 >= 0 ? tl-1 : tl;
+                let absenseTime = Date.now() - parseInt(lt,10);
+                let res = parseInt(tl,10)-parseInt(absenseTime/1000);
+                if(res < 0)
+                    res = 0;
+
+                this.timeLeft = res-1;//if fast reload 
             }
-            else if(this.secondsToWait)
+            else
             {
                 this.timeLeft = this.secondsToWait;
-            }   
+            }
+            localStorage.setItem("timeLeft", this.timeLeft);
             this.counterInterval = setInterval(this.timeCounter, 1000);
+            this.$emit("timerSet")
         },
 
         unmounted()
         {
-            localStorage.removeItem("timeLeft");
-            clearInterval(this.counterInterval);
-            this.doTansition = false;
+            this.unloaded()
+            window.removeEventListener('beforeunload', this.unloaded);
         },
+
+
 
         data() 
         {
@@ -63,11 +83,18 @@
                 prompt: "",
                 mounted: false,
                 counterInterval: null,
-                doTansition: false
+                doTansition: false,
             }
         },
 
         methods: {
+
+            unloaded()
+            {
+                clearInterval(this.counterInterval);
+                localStorage.setItem("leaveTime", Date.now());
+                this.doTansition = false;
+            },
 
             timeCounter()
             {
@@ -75,6 +102,7 @@
                 {
                     clearInterval(this.counterInterval);
                     localStorage.removeItem("timeLeft");
+                    localStorage.removeItem("leaveTime");
                     this.$emit('timeOut'); 
                     return;
                 }

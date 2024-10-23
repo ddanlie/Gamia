@@ -37,7 +37,9 @@
             <template v-if="this.currentGame.stage == 1">
                 <div class="full off-none-1000 half-1000 three-fifth-1500 textCenter promptStageWrap">
                     <h1 class="greenColor" style="padding:0; margin-bottom: 2%;">{{this.currentGame.name}}</h1>
-                    <TimeoutWritingComponent 
+                    <TimeoutWritingComponent
+                        :newTimer="this.newTimer"
+                        @timerSet="this.newTimer = false"
                         @timeOut="this.setReady()"
                         @promptReady="(p) => {this.prompt = p;}"
                         :secondsToWait="this.currentGame.logic.secTimer" 
@@ -60,6 +62,8 @@
                     style="margin-left: 0%;">
                     <h1 class="greenColor" style="padding:0; margin-bottom: 2%;">{{this.currentGame.name}}</h1>
                     <TimeoutWritingComponent :key="currentGame.stage"
+                        :newTimer="this.newTimer"
+                        @timerSet="this.newTimer = false"
                         textVal="Describe image!"
                         @timeOut="this.setReady()"
                         @promptReady="(p) => {this.prompt = p;}"
@@ -142,36 +146,46 @@
                 prompt: "",
                 describedImgSrc: "",
                 mounted: undefined,
-
+                newTimer: true,
+                minStages: 2,
                 maxStages: 5//min - 2
             }   
         },
 
         watch: {
+            newTimer(newinfo)
+            {
+                console.log("TIMER "+newinfo);
+            }, 
+
             'currentGame.stage'(newInfo, oldInfo)
             {
+                let newT = false;
                 let finish = false;
+
                 if(newInfo >= this.maxStages-1)//last stage - results
-                {
                     finish = true;
-                }
+
                 if(finish && newInfo > this.maxStages-1)
                     this.currentGame.stage = oldInfo;
 
-                //stage 0 - preparation
-                //stage 1 - prompts
-                //stage 2 - describe prompts 
-                if(newInfo >= 2 && (newInfo != oldInfo) && oldInfo)
+                //stage 1 - preparation
+                //stage 2 - prompts
+                //stage 3 - describe prompts (cycled) 
+                if(oldInfo && (newInfo != oldInfo))//description stages
                 {
-                    console.log("NEW STAGE "+newInfo+" Finish: "+finish);
-                    if(this.currentGame.state != 'Finished')
-                        this.submitPrompt(!finish);
+                    newT = true;
+                    console.log("NEW STAGE "+newInfo+" OLD "+oldInfo+" Finish: "+finish);
+                    if(newInfo >= this.minStages && this.currentGame.state != 'Finished')
+                            this.submitPrompt(!finish);
                 }
+                if(!oldInfo && !this.newTimer)
+                    newT = true;
 
                 if(finish)
                     this.finishGame()
 
-                
+                this.newTimer = newT;
             }
         },
 
