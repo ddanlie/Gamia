@@ -331,20 +331,20 @@ def get_toggle_ready():
         allReady = allReady and u.ready_for_game
                
     if(allReady):
-        set_next_stage(game)
+        set_next_stage_and_save(game)
 
     #TODO: user.ready is not returned anymore
     return jsonify({}), 200
 
 
-def set_next_stage(game):    
-    game.state = 'Playing'
-    for u in game.users:
-        db.session.add(u)
-        u.ready_for_game = False    
-    db.session.commit()
-
-    game.stage += 1
+def set_next_stage_and_save(game):
+    if(game.state != 'Finished'):    
+        game.state = 'Playing'
+        for u in game.users:
+            db.session.add(u)
+            u.ready_for_game = False    
+        db.session.commit()
+        game.stage += 1
 
     db.session.add(game)
     db.session.commit()
@@ -383,6 +383,11 @@ def generate_image(prompt, uniqueGameId, gameType) -> str:
     
     return src
 
+def get_fake_src():
+    path =  "generatedExample.jpg"
+    src = url_for('static', filename=path, _external=True)
+    return src
+
 #specific game logic
 #Recycle
 
@@ -410,18 +415,23 @@ def post_recycle_submit_prompt():
 
     logic = json.loads(game.temp_json_data)
 
+    resubmition = False
     #protection: if function called wrong number of times - dont react
     #call rules:  submit_prompt -----> prepare_describing -----> submit_prompt -----> prepare_describing ...
     userTrace = trace.format(data['userId'])
     if(not logic.get(userTrace)):#no trace - good, we are first function as it has to be
         logic[userTrace] = submitPromptTrace
-    elif logic[userTrace] != getImageTrace:#if there is a trace last called has to be "get image" - otherwise error
-       return jsonify({}), 404
-    else:#otherwise make trace - we called "submit prompt"
-        logic[userTrace] = submitPromptTrace
+    elif logic[userTrace] == getImageTrace:
+        logic[userTrace] = submitPromptTrace#change trace: we called "submit prompt" after getting image
+    elif logic[userTrace] == submitPromptTrace:#prompt was already submitted but we can resubmit it
+        resubmition = True
+    else:
+        return jsonify({}), 404
+
+       
 
     #generate image by prompt
-    generatedSrc = generate_image(data['prompt'], game.id, game.game_ref.type) 
+    generatedSrc = get_fake_src()# generate_image(data['prompt'], game.id, game.game_ref.type) 
 
     #look for last user in "users" history unit - its user who got image to describe
     #else - create new unit
@@ -434,11 +444,19 @@ def post_recycle_submit_prompt():
     for unit in logic['history']:
         if int(unit['users'][-1]) == int(user.id):
             foundUnit = unit
+            break
 
-    if foundUnit:#we do not put user here because we put him when we chose what other user it takes image to describe from 
-        foundUnit['prompts'].append(str(data['prompt']))
-        foundUnit['generatedSrc'].append(generatedSrc)
-        foundUnit['taken'] = False
+    if foundUnit:
+        if resubmition:
+            foundUnit['prompts'][-1] = (str(data['prompt']))
+            foundUnit['generatedSrc'][-1] = generatedSrc
+            foundUnit['names'][-1] = (str(user.name))
+            foundUnit['taken'] = False
+        else:
+            foundUnit['prompts'].append(str(data['prompt']))
+            foundUnit['generatedSrc'].append(generatedSrc)
+            foundUnit['names'].append(str(user.name))
+            foundUnit['taken'] = False
     else:
         logic['history'].append({
             'prompts': [data['prompt']], 
@@ -454,17 +472,19 @@ def post_recycle_submit_prompt():
 
     return jsonify({}), 200
 
+
+
 #TODO: add to docs
 @app.route('/api/recycle_prepare_describing') 
 def get_recycle_prepare_describing():
     user = Users.query.get(request.args['userId'])
     if not user:
-        #print("PREP DESC USER 404")
+        print("PREP DESC USER 404")
         return jsonify({}), 404
     
     game = user.current_played_game
     if not game:
-        #print("PREP DESC GAME 404")
+        print("PREP DESC GAME 404")
         return jsonify({}), 404
     
     logic = json.loads(game.temp_json_data)
@@ -477,8 +497,8 @@ def get_recycle_prepare_describing():
     if(not logic.get(userTrace)):#no trace - bad, we are not the first function user had to call
         print("PREP DESC NOTRACE 404"+f" {game.temp_json_data}")
         return jsonify({}), 404
-    elif logic[userTrace] != submitPromptTrace:#trace is present but specified wrong - bad
-       #print("PREP DESC WRONGTRACE 404")
+    elif logic[userTrace] != submitPromptTrace:#trace is present but specified wrong
+       print("PREP DESC WRONGTRACE 404")
        return jsonify({}), 404
     else:#if order is ok we modify trace
         logic[userTrace] = getImageTrace
@@ -500,15 +520,18 @@ def get_recycle_prepare_describing():
             unit['taken'] = True
             break
 
+   
+
+
     src = None
     if foundUnit:
         foundUnit['users'].append(int(user.id))
-        foundUnit['names'].append(str(user.name))
-        src = foundUnit['generatedSrc'][-1]
+        generatedSrc = generate_image(foundUnit['prompts'][-1], game.id, game.game_ref.type)
+        src = foundUnit['generatedSrc'][-1] = generatedSrc
     else:
         lastChanceUnit['users'].append(int(user.id))
-        lastChanceUnit['names'].append(str(user.name))
-        src = lastChanceUnit['generatedSrc'][-1]
+        generatedSrc = generate_image(lastChanceUnit['prompts'][-1], game.id, game.game_ref.type)
+        src = lastChanceUnit['generatedSrc'][-1] = generatedSrc
 
     game.temp_json_data = json.dumps(logic)
     db.session.add(game)
@@ -531,9 +554,9 @@ def get_recycle_game_results():
     #do not include bad call orders to results
     for unit in logic['history']:
             l1 = len(unit['prompts'])
-            l2 = len(unit['generatedSrc'])#assert case
-            l3 = len(unit['users'])
-            if(l1 != l2 or l2 != l3 or unit['taken']):#l1 != l3 - do not need
+            l2 = len(unit['generatedSrc'])
+          #  l3 = len(unit['users'])
+            if(l1 != l2 or unit['taken']):#l1 != l3 - do not need
                 continue
             results['results'].append(unit)
 

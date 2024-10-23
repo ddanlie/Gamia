@@ -102,8 +102,8 @@
 
             startShow()
             {
-                this.nextSetRecord = -1;
-                this.revealInterval = setInterval(this.revealNext, 1000);
+                this.nextSetRecord = 0;
+                this.revealInterval = setInterval(this.revealNext, 2000);
             },
 
             nextSet()
@@ -148,21 +148,20 @@
 .resStyle
 {
     max-width: 70%;
-    background-color: white;
+    background-color: rgba(251, 190, 91, 0.14);
     border-radius: 15px;
-    padding-top: 6%;
+    padding-top: 4%;
 }   
 
 .scrolledHistory
 {
     padding: 10% 5% 0 0;
-    min-height: 475px;
+    min-height: 500px;
     max-height: 500px;  
     overflow-y: scroll;
     word-wrap: break-word;
     scrollbar-width: thin;
-    scrollbar-color: #DA6D6B white;
-
+    scrollbar-color: #DA6D6B rgba(251, 190, 91, 0.01);
 
 }
 

@@ -40,19 +40,21 @@
                     <TimeoutWritingComponent
                         :newTimer="this.newTimer"
                         @timerSet="this.newTimer = false"
-                        @timeOut="this.setReady()"
+                        @timeOut="submitPrompt(); this.setReady()"
                         @promptReady="(p) => {this.prompt = p;}"
                         :secondsToWait="this.currentGame.logic.secTimer" 
                         class="full off-fourth-500 half-500 off-third-1500 third-1500"/>
                     <ReadyButtonComponent  
-                        @readyPressed="this.setReady()"  
+                        @readyPressed="submitPrompt(); this.setReady()"  
                         :ready="this.playerIsReady"
                         style="margin-top: 5%;"/>
                 </div>
             </template>
 
 
-            <template v-if="this.currentGame.stage >= 2 && this.currentGame.state=='Playing'" :key="this.currentGame.stage" >
+            <template v-if="this.currentGame.stage <= this.submitsCount 
+                            && this.currentGame.stage > 1 
+                            && this.currentGame.state=='Playing'" :key="this.currentGame.stage" >
                 <div class="full fifth-1500 textCenter imgWrap">
                     <img :src="this.describedImgSrc" 
                         style='max-height: 100vh; max-width: 100%; width: 400px; height: 400px; 
@@ -65,13 +67,13 @@
                         :newTimer="this.newTimer"
                         @timerSet="this.newTimer = false"
                         textVal="Describe image!"
-                        @timeOut="this.setReady()"
+                        @timeOut="submitPrompt(); setReady();"
                         @promptReady="(p) => {this.prompt = p;}"
                         :secondsToWait="this.currentGame.logic.secTimer" 
                         class="full off-fourth-500 half-500 off-fourth-1500 half-1500"/>
                     <ReadyButtonComponent 
                         :key="this.currentGame.stage"
-                        @readyPressed="this.setReady()"  
+                        @readyPressed="this.submitPrompt(); this.setReady();"  
                         :ready="this.playerIsReady"
                         style="margin-top: 5%;"/>
                 </div>
@@ -146,9 +148,8 @@
                 prompt: "",
                 describedImgSrc: "",
                 mounted: undefined,
-                newTimer: true,
-                minStages: 2,
-                maxStages: 5//min - 2
+                newTimer: false,
+                submitsCount: 5//min - 1
             }   
         },
 
@@ -160,36 +161,47 @@
 
             'currentGame.stage'(newInfo, oldInfo)
             {
+                let stageOrder = newInfo+1;
+                
+                if(oldInfo === "")
+                    return;
+                if(stageOrder > this.stagesCount)
+                    return;
+
                 let newT = false;
                 let finish = false;
 
-                if(newInfo >= this.maxStages-1)//last stage - results
+                if(stageOrder == this.stagesCount)//last stage - results
+                {
                     finish = true;
+                    this.finishGame();
+                }
 
-                if(finish && newInfo > this.maxStages-1)
-                    this.currentGame.stage = oldInfo;
-
-                //stage 1 - preparation
-                //stage 2 - prompts
-                //stage 3 - describe prompts (cycled) 
-                if(oldInfo && (newInfo != oldInfo))//description stages
+                //stage 0 - preparation 
+                //stage 1 - prompts
+                //stage 2 - describe prompts (cycled) 
+                if(newInfo != oldInfo)
                 {
                     newT = true;
                     console.log("NEW STAGE "+newInfo+" OLD "+oldInfo+" Finish: "+finish);
-                    if(newInfo >= this.minStages && this.currentGame.state != 'Finished')
-                            this.submitPrompt(!finish);
+                    if(stageOrder > this.submitsCount)//from prompt description stage
+                    {
+                        // this.submitPrompt();
+                        setTimeout(this.getPictureToDescribe, 1000);
+                    }
                 }
-                if(!oldInfo && !this.newTimer)
-                    newT = true;
-
-                if(finish)
-                    this.finishGame()
 
                 this.newTimer = newT;
+
             }
         },
 
         computed: {
+            stagesCount()
+            {
+                //(0)preparation stage        (results stage)
+                return    1+    this.submitsCount    +1;
+            }
         },
 
         methods: {
@@ -338,7 +350,7 @@
             },
 
 
-            submitPrompt(getNextPicture=true)
+            submitPrompt()
             {
                 this.$api.post("recycle_submit_prompt", {
                     userId: this.user.id,
@@ -348,8 +360,6 @@
                     timeout: 10000
                 })
                 .then(response => {
-                    if(getNextPicture)
-                        this.getPictureToDescribe();
                 })
                 .catch(error => {
                     this.errorWarning = "Submit error";
