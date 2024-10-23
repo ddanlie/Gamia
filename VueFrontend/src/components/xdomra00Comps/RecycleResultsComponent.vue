@@ -4,17 +4,17 @@
     <!-- results window -->
     <div v-if="this.results" class="flex textCenter resStyle">
 
-        <div class="scrolledHistory">
+        <div class="flex scrolledHistory " ref="scroller">
             <div v-if="this.nextSetRecord >= 0" 
                 v-for="(playerName, idx) in this.results[this.playedSet].names.slice(0, this.nextSetRecord)"
                 class="full three">
     
                 <h3 class="full"
-                    style="padding: 5% 0 5% 5%; text-align:left; color:black;">
+                    style="padding: 5% 30% 5% 5%; text-align:left; color:black;">
                     {{playerName}}:<br/>{{this.results[this.playedSet].prompts[idx]}}
                 </h3>
     
-                <img class="full off-third" 
+                <img class="full off-third"  
                     :src="this.results[this.playedSet].generatedSrc[idx]" 
                     style="max-height: 100vh; max-width: 100%; width: 200px; height: 200px; margin: 0% -55% 0 0 ;
                     object-fit: contain" :style="{ opacity: this.results[this.playedSet].generatedSrc[idx]==='' ? '1' : '1'}">
@@ -28,7 +28,7 @@
             <button class="off-two redBack" :disabled="this.playedSet == 0" @click="this.prevSet">
                 Prev
             </button>
-            <button class="off-third -greenBack"  :disabled="this.playedSet == this.results.length-1" @click="this.nextSet">
+            <button class="off-third greenBack"  :disabled="this.playedSet == this.results.length-1" @click="this.nextSet">
                 Next
             </button>
         </div>
@@ -38,7 +38,6 @@
 
 
 <script>
-    import { getCurrentInstance } from 'vue'; 
 
     export default {
          
@@ -92,7 +91,7 @@
                 })
                 .then(response => {
                     this.results = response.data.results;//array
-                    console.log("RESULTS: "+this.results);
+                    console.log("RESULTS: "+JSON.stringify(this.results));
                     this.playedSet = 0;
                     this.startShow();
                 })
@@ -104,7 +103,7 @@
             startShow()
             {
                 this.nextSetRecord = -1;
-                this.revealInterval = setInterval(this.revealNext, 100);
+                this.revealInterval = setInterval(this.revealNext, 1000);
             },
 
             nextSet()
@@ -135,6 +134,8 @@
                 {
                     clearInterval(this.revealInterval);
                 }
+                const scroller = this.$refs.scroller;
+                scroller.scrollTop = scroller.scrollHeight;
             }
 
         }
@@ -149,11 +150,20 @@
     max-width: 70%;
     background-color: white;
     border-radius: 15px;
+    padding-top: 6%;
 }   
 
 .scrolledHistory
 {
-    max-height: 100%;
+    padding: 10% 5% 0 0;
+    min-height: 475px;
+    max-height: 500px;  
+    overflow-y: scroll;
+    word-wrap: break-word;
+    scrollbar-width: thin;
+    scrollbar-color: #DA6D6B white;
+
+
 }
 
 

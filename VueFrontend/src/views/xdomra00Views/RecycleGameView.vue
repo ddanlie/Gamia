@@ -49,6 +49,7 @@
                 </div>
             </template>
 
+
             <template v-if="this.currentGame.stage >= 2 && this.currentGame.state=='Playing'" :key="this.currentGame.stage" >
                 <div class="full fifth-1500 textCenter imgWrap">
                     <img :src="this.describedImgSrc" 
@@ -58,21 +59,24 @@
                 <div class="full off-none-1000 half-1000 two-fifth-1500 textCenter"
                     style="margin-left: 0%;">
                     <h1 class="greenColor" style="padding:0; margin-bottom: 2%;">{{this.currentGame.name}}</h1>
-                    <TimeoutWritingComponent :key="this.currentGame.stage" 
+                    <TimeoutWritingComponent :key="currentGame.stage"
+                        textVal="Describe image!"
                         @timeOut="this.setReady()"
                         @promptReady="(p) => {this.prompt = p;}"
                         :secondsToWait="this.currentGame.logic.secTimer" 
                         class="full off-fourth-500 half-500 off-fourth-1500 half-1500"/>
-                    <ReadyButtonComponent :key="this.currentGame.stage"
+                    <ReadyButtonComponent 
+                        :key="this.currentGame.stage"
                         @readyPressed="this.setReady()"  
                         :ready="this.playerIsReady"
                         style="margin-top: 5%;"/>
                 </div>
             </template>
 
+
             <template v-if="this.currentGame.state == 'Finished'">
-                <div class="half resultsWrap">
-                    <RecycleResultsComponent :gameId="this.currentGame.id"/>
+                <div class="full half-1000 three-fifth-1500 resultsWrap">
+                    <RecycleResultsComponent class="off-sixth" :gameId="this.currentGame.id"/>
                 </div>
             </template>
 
@@ -85,9 +89,6 @@
                 <PartyUsersComponent :users="currentPlayers"/>
             </div>
         </div>
-        
-
-
     </div>
 </template>
 
@@ -142,7 +143,7 @@
                 describedImgSrc: "",
                 mounted: undefined,
 
-                maxStages: 3//min - 2
+                maxStages: 5//min - 2
             }   
         },
 
@@ -150,17 +151,21 @@
             'currentGame.stage'(newInfo, oldInfo)
             {
                 let finish = false;
-                if(newInfo >= this.maxStages && this.currentGame.state != 'Finished')
+                if(newInfo >= this.maxStages-1)//last stage - results
                 {
                     finish = true;
                 }
+                if(finish && newInfo > this.maxStages-1)
+                    this.currentGame.stage = oldInfo;
+
                 //stage 0 - preparation
                 //stage 1 - prompts
-                //stage 2 - describe prompts
+                //stage 2 - describe prompts 
                 if(newInfo >= 2 && (newInfo != oldInfo) && oldInfo)
                 {
                     console.log("NEW STAGE "+newInfo+" Finish: "+finish);
-                    this.submitPrompt(!finish);
+                    if(this.currentGame.state != 'Finished')
+                        this.submitPrompt(!finish);
                 }
 
                 if(finish)
@@ -397,13 +402,13 @@
 
 .resultsWrap
 {
-
+    margin-left:13%; 
 }
 
 
 @media(max-width:1500px)
 {
-    .infoWrap, .promptStageWrap, .imgWrap
+    .infoWrap, .promptStageWrap, .imgWrap, .resultsWrap
     {
         margin-left: 0;
     }
