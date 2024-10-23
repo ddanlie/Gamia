@@ -508,10 +508,12 @@ def get_recycle_prepare_describing():
     foundUnit = None
     lastChanceUnit = None
     for unit in logic['history']:
-        l1 = len(unit['prompts'])
-        l2 = len(unit['generatedSrc'])#assert case
-        l3 = len(unit['users'])
-        if(l1 != l2 or l2 != l3 or unit['taken']):#l1 != l3 - do not need
+        # l1 = len(unit['prompts'])
+        # l2 = len(unit['generatedSrc'])#assert case
+        # l3 = len(unit['users'])
+        # if(l1 != l2 or l2 != l3 or unit['taken']):#l1 != l3 - do not need
+        #     continue
+        if(unit['taken']):
             continue
         elif(int(unit['users'][-1]) == int(user.id)):
             lastChanceUnit = unit
