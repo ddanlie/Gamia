@@ -82,7 +82,9 @@
 
             <template v-if="this.currentGame.state == 'Finished' || this.currentGame.stage+1 == this.stagesCount">
                 <div class="full half-1000 three-fifth-1500 resultsWrap">
-                    <RecycleResultsComponent class="off-sixth" :gameId="this.currentGame.id"/>
+                    <RecycleResultsComponent class="off-sixth" 
+                        :gameId="this.currentGame.id"
+                        />
                 </div>
             </template>
 
@@ -149,7 +151,7 @@
                 describedImgSrc: "",
                 mounted: undefined,
                 newTimer: false,
-                submitsCount: 5//min - 1
+                submitsCount: 3//min - 1
             }   
         },
 
@@ -187,7 +189,7 @@
                     if(stageOrder > 2)//from prompt description stage
                     {
                         // this.submitPrompt();
-                        setTimeout(this.getPictureToDescribe, 1000);
+                        setTimeout(this.getPictureToDescribe, 200);
                     }
                 }
 

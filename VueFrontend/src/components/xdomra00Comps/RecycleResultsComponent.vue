@@ -16,7 +16,7 @@
     
                 <img class="full off-third"  
                     :src="this.results[this.playedSet].generatedSrc[idx]" 
-                    style="max-height: 100vh; max-width: 100%; width: 200px; height: 200px; margin: 0% -55% 0 0 ;
+                    style="max-height: 100vh; max-width: 100%; width: 400; height: 400px; margin: 0% -55% 0 0 ;
                     object-fit: contain" :style="{ opacity: this.results[this.playedSet].generatedSrc[idx]==='' ? '1' : '1'}">
             </div>
         </div>
@@ -155,10 +155,11 @@
 
 .scrolledHistory
 {
-    padding: 10% 5% 0 0;
+    padding: 5% 5% 0 0;
     min-height: 500px;
     max-height: 500px;  
     overflow-y: scroll;
+    overflow-x: hidden;
     word-wrap: break-word;
     scrollbar-width: thin;
     scrollbar-color: #DA6D6B rgba(251, 190, 91, 0.01);

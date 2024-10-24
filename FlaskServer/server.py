@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import json, random, string
 import uuid
+from fluxGenerator import spit_url
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -368,20 +369,20 @@ def post_finish_game():
 
 #returns path to generated image
 
-def generate_image(prompt, uniqueGameId, gameType) -> str:
-    path = './static'
-    if gameType == 'Recycle':
-        path += '/recycleGamesContent'
-    elif gameType == 'Riddle':
-        path += '/riddleGamesContent'
+async def generate_image(prompt, uniqueGameId, gameType) -> str:
+    # path = './static'
+    # if gameType == 'Recycle':
+    #     path += '/recycleGamesContent'
+    # elif gameType == 'Riddle':
+    #     path += '/riddleGamesContent'
     
-    path += f'/game-{uniqueGameId}-{uuid.uuid4()}.jpg'
+    # path += f'/game-{uniqueGameId}-{uuid.uuid4()}.jpg'
 
-    #TODO: temporary logic untill api connected
-    path =  "generatedExample.jpg"
-    src = url_for('static', filename=path, _external=True)
-    
-    return src
+    # #TODO: temporary logic untill api connected
+    # path =  "generatedExample.jpg"
+    # src = url_for('static', filename=path, _external=True)
+    url = await spit_url(prompt)
+    return url
 
 def get_fake_src():
     path =  "generatedExample.jpg"
@@ -476,7 +477,7 @@ def post_recycle_submit_prompt():
 
 #TODO: add to docs
 @app.route('/api/recycle_prepare_describing') 
-def get_recycle_prepare_describing():
+async def get_recycle_prepare_describing():
     user = Users.query.get(request.args['userId'])
     if not user:
         print("PREP DESC USER 404")
@@ -528,11 +529,11 @@ def get_recycle_prepare_describing():
     src = None
     if foundUnit:
         foundUnit['users'].append(int(user.id))
-        generatedSrc = generate_image(foundUnit['prompts'][-1], game.id, game.game_ref.type)
+        generatedSrc = await generate_image(foundUnit['prompts'][-1], game.id, game.game_ref.type)
         src = foundUnit['generatedSrc'][-1] = generatedSrc
     else:
         lastChanceUnit['users'].append(int(user.id))
-        generatedSrc = generate_image(lastChanceUnit['prompts'][-1], game.id, game.game_ref.type)
+        generatedSrc = await generate_image(lastChanceUnit['prompts'][-1], game.id, game.game_ref.type)
         src = lastChanceUnit['generatedSrc'][-1] = generatedSrc
 
     game.temp_json_data = json.dumps(logic)
