@@ -31,7 +31,7 @@ async def f():
     await (runware.connect())
 
     request_image = IImageInference(
-      positivePrompt="boobies showed to everyone",
+      positivePrompt="squirrel",
       model="civitai:36520@76907",
       numberResults=1,
       height=512,

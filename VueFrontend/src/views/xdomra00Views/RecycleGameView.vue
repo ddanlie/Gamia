@@ -1,6 +1,6 @@
 
 <template>
-    <div v-if="this.currentGame" class="flex one center">
+    <div v-if="this.render" class="flex one center">
         <h4 v-if="errorWarning" class="redColor">
             {{ errorWarning }}
         </h4>
@@ -40,12 +40,12 @@
                     <TimeoutWritingComponent
                         :newTimer="this.newTimer"
                         @timerSet="this.newTimer = false"
-                        @timeOut="submitPrompt(); this.setReady()"
+                        @timeOut="submitAndReady()"
                         @promptReady="(p) => {this.prompt = p;}"
                         :secondsToWait="this.currentGame.logic.secTimer" 
                         class="full off-fourth-500 half-500 off-third-1500 third-1500"/>
                     <ReadyButtonComponent  
-                        @readyPressed="submitPrompt(); this.setReady()"  
+                        @readyPressed="submitAndReady()"  
                         :ready="this.playerIsReady"
                         style="margin-top: 5%;"/>
                 </div>
@@ -67,13 +67,13 @@
                         :newTimer="this.newTimer"
                         @timerSet="this.newTimer = false"
                         textVal="Describe image!"
-                        @timeOut="submitPrompt(); setReady();"
+                        @timeOut="submitAndReady()"
                         @promptReady="(p) => {this.prompt = p;}"
                         :secondsToWait="this.currentGame.logic.secTimer" 
                         class="full off-fourth-500 half-500 off-fourth-1500 half-1500"/>
                     <ReadyButtonComponent 
                         :key="this.currentGame.stage"
-                        @readyPressed="this.submitPrompt(); this.setReady();"  
+                        @readyPressed="submitAndReady()"  
                         :ready="this.playerIsReady"
                         style="margin-top: 5%;"/>
                 </div>
@@ -151,7 +151,8 @@
                 describedImgSrc: "",
                 mounted: undefined,
                 newTimer: false,
-                submitsCount: 3//min - 1
+                submitsCount: 3,//min - 1
+                render: false,
             }   
         },
 
@@ -189,7 +190,8 @@
                     if(stageOrder > 2)//from prompt description stage
                     {
                         // this.submitPrompt();
-                        setTimeout(this.getPictureToDescribe, 200);
+                        this.render = false;
+                        setTimeout(this.getPictureToDescribe, 1000);
                     }
                 }
 
@@ -212,7 +214,9 @@
             {
                 if(!this.mounted)
                     return;
-                this.$api.get("fantom_user")
+
+                this.render = false;
+                return this.$api.get("fantom_user")
                 .then(response => {
                     this.user = response.data;
                     console.log("1. Current user = "+JSON.stringify(this.user));
@@ -220,7 +224,7 @@
                     this.setPLayedGame(this.user.current_game_id);
                 })
                 .catch(error => {
-                    setTimeout(this.setFantomUser, 2000);
+                    setTimeout(this.setUserThenGame, 2000);
                     // console.log(error);
                 })
             },
@@ -230,7 +234,7 @@
                 if(!this.mounted)
                     return;
 
-                this.$api.get("played_game", {
+                return this.$api.get("played_game", {
                     params: {
                         id: currentGameId
                     }
@@ -239,6 +243,8 @@
                     this.currentGame = response.data;
                     this.currentGame.logic = JSON.parse(this.currentGame.logic);
                     console.log("2. Current game = "+JSON.stringify(this.currentGame));
+                    
+                    this.render = true;
 
                     this.setGameInfo(this.currentGame.game_id);
                     this.currentPlayersPoll(currentGameId);
@@ -254,7 +260,7 @@
             {
                 if(!this.mounted)
                     return;
-                this.$api.get("game_info", {
+                return this.$api.get("game_info", {
                     params: {
                         id: gameId
                     }
@@ -264,7 +270,7 @@
 
                 })
                 .catch(error => {
-                    setTimeout(setGame, 2000);
+                    setTimeout(this.setGameInfo, 2000);
                     // console.log(error);
                 })
             },
@@ -274,7 +280,7 @@
                 if(!this.mounted)
                     return;
 
-                this.$api.get("game_players", {
+                return this.$api.get("game_players", {
                     params: {
                         id: currentGameId
                     }
@@ -295,7 +301,7 @@
                     // console.log(error);
                 })
                 .finally(() => {
-                    setTimeout(() => this.currentPlayersPoll(currentGameId), 2000);
+                    setTimeout(() => this.currentPlayersPoll(currentGameId), 500);
                 })
             },
 
@@ -304,7 +310,7 @@
                 if(!this.mounted)
                     return;
 
-                this.$api.get("played_game", {
+                return this.$api.get("played_game", {
                     params: {
                         id: currentGameId
                     }
@@ -318,13 +324,13 @@
                     // console.log(error);
                 })
                 .finally(() => {
-                    setTimeout(() => this.currentGamePoll(currentGameId), 1000);
+                    setTimeout(() => this.currentGamePoll(currentGameId), 500);
                 })
             },
 
             disconnectUser()
             {
-                this.$api.post("disconnect_player", {
+                return this.$api.post("disconnect_player", {
                     id: this.user.id
                 }, {
                         withCredentials: true
@@ -340,7 +346,7 @@
 
             setReady()
             {
-                this.$api.get("toggle_ready", {
+                return this.$api.get("toggle_ready", {
                     params: {
                         userId: this.user.id,
                     }
@@ -354,7 +360,7 @@
 
             submitPrompt()
             {
-                this.$api.post("recycle_submit_prompt", {
+                return this.$api.post("recycle_submit_prompt", {
                     userId: this.user.id,
                     prompt: this.prompt,
                 }, {
@@ -371,7 +377,7 @@
 
             getPictureToDescribe()
             {
-                this.$api.get("recycle_prepare_describing", {
+                return this.$api.get("recycle_prepare_describing", {
                     params: {
                         userId: this.user.id,
                     },
@@ -379,6 +385,7 @@
                 })
                 .then(response => {
                     this.describedImgSrc = response.data.src; 
+                    this.render = true;
                 })
                 .catch(error => {
                     this.errorWarning = "Error, could not get image";
@@ -391,7 +398,7 @@
                 if(!this.mounted)
                     return;
 
-                this.$api.post("finish_game", {
+                return this.$api.post("finish_game", {
                     id: this.currentGame.id
                 }, {
                     withCredentials: true
@@ -400,6 +407,12 @@
                     setTimeout(this.finishGame, 300);
                 })
             },
+
+            submitAndReady()
+            {
+                this.submitPrompt().then((x) => {this.setReady()});
+                
+            }
         }
     }
 

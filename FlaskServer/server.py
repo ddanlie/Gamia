@@ -85,7 +85,7 @@ def putGameLogic(type, logic):
         logic['secTimer'] = 50
 
     elif type == 'Recycle':
-        logic['secTimer'] = 50
+        logic['secTimer'] = 500
         logic['history'] = []
 
 
@@ -113,10 +113,10 @@ def get_fantom_user():
         fantom_user = Users.query.get(int(id))
     
     if not fantom_user:
-        fantom_user = Users(name='user#', fantom=True)
+        fantom_user = Users(name='#user', fantom=True)
         db.session.add(fantom_user)
         db.session.commit()
-        fantom_user.name += f"{fantom_user.id:04d}"
+        fantom_user.name = f"{fantom_user.id:04d}" + fantom_user.name
         db.session.commit()
 
     user_data = {
@@ -291,7 +291,11 @@ def post_join_game():
     if not player:
         return jsonify({}), 404
     
-    game = PlayedGame.query.filter_by(party_code=data['code'].upper(), state='Preparing').first()
+    game = PlayedGame.query.filter(
+        PlayedGame.party_code == data['code'].upper(),
+        PlayedGame.state.in_(['Preparing', 'Finished'])
+    ).first()
+
     if not game:
         return jsonify({}), 404
     
@@ -389,6 +393,11 @@ def get_fake_src():
     src = url_for('static', filename=path, _external=True)
     return src
 
+def get_fake_real_src():
+    path =  "realGenerated.png"
+    src = url_for('static', filename=path, _external=True)
+    return src
+
 #specific game logic
 #Recycle
 
@@ -451,7 +460,7 @@ def post_recycle_submit_prompt():
         if resubmition:
             foundUnit['prompts'][-1] = (str(data['prompt']))
             foundUnit['generatedSrc'][-1] = generatedSrc
-            foundUnit['names'][-1] = (str(user.name))
+            foundUnit['names'][-1] = str(user.name)
             foundUnit['taken'] = False
         else:
             foundUnit['prompts'].append(str(data['prompt']))
@@ -466,8 +475,8 @@ def post_recycle_submit_prompt():
             'names': [str(user.name)],
             'taken': False})
         
-    game.temp_json_data = json.dumps(logic)
 
+    game.temp_json_data = json.dumps(logic)
     db.session.add(game)
     db.session.commit()
 
@@ -509,11 +518,6 @@ async def get_recycle_prepare_describing():
     foundUnit = None
     lastChanceUnit = None
     for unit in logic['history']:
-        # l1 = len(unit['prompts'])
-        # l2 = len(unit['generatedSrc'])#assert case
-        # l3 = len(unit['users'])
-        # if(l1 != l2 or l2 != l3 or unit['taken']):#l1 != l3 - do not need
-        #     continue
         if(unit['taken']):
             continue
         elif(int(unit['users'][-1]) == int(user.id)):
@@ -523,18 +527,19 @@ async def get_recycle_prepare_describing():
             unit['taken'] = True
             break
 
-   
-
-
     src = None
     if foundUnit:
         foundUnit['users'].append(int(user.id))
-        generatedSrc = await generate_image(foundUnit['prompts'][-1], game.id, game.game_ref.type)
-        src = foundUnit['generatedSrc'][-1] = generatedSrc
+        generatedSrc = get_fake_real_src()
+        #generatedSrc = await generate_image(foundUnit['prompts'][-1], game.id, game.game_ref.type)
+        foundUnit['generatedSrc'][-1] = generatedSrc#see - submit prompt
+        src = foundUnit['generatedSrc'][-1]
     else:
         lastChanceUnit['users'].append(int(user.id))
-        generatedSrc = await generate_image(lastChanceUnit['prompts'][-1], game.id, game.game_ref.type)
-        src = lastChanceUnit['generatedSrc'][-1] = generatedSrc
+        generatedSrc = get_fake_real_src()
+        #generatedSrc = await generate_image(lastChanceUnit['prompts'][-1], game.id, game.game_ref.type)
+        lastChanceUnit['generatedSrc'][-1] = generatedSrc#see - submit prompt
+        src = lastChanceUnit['generatedSrc'][-1]
 
     game.temp_json_data = json.dumps(logic)
     db.session.add(game)
@@ -559,7 +564,7 @@ def get_recycle_game_results():
             l1 = len(unit['prompts'])
             l2 = len(unit['generatedSrc'])
           #  l3 = len(unit['users'])
-            if(l1 != l2 or unit['taken']):#l1 != l3 - do not need
+            if(l1 != l2):#l1 != l3 - do not need
                 continue
             results['results'].append(unit)
 

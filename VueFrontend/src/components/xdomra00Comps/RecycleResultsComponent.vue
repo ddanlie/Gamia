@@ -53,7 +53,7 @@
         mounted()
         {
             this.mounted = true;
-            setTimeout(this.getResults(), 2000);//to get more fresh data
+            setTimeout(this.getResults, 2000);//to get more fresh data
         },
 
         unmounted()
@@ -103,7 +103,7 @@
             startShow()
             {
                 this.nextSetRecord = 0;
-                this.revealInterval = setInterval(this.revealNext, 2000);
+                this.revealInterval = setInterval(this.revealNext, 500);
             },
 
             nextSet()
@@ -134,8 +134,8 @@
                 {
                     clearInterval(this.revealInterval);
                 }
-                const scroller = this.$refs.scroller;
-                scroller.scrollTop = scroller.scrollHeight;
+                // const scroller = this.$refs.scroller;
+                // scroller.scrollTop = scroller.scrollHeight;
             }
 
         }
