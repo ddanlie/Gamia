@@ -53,7 +53,7 @@
         mounted()
         {
             this.mounted = true;
-            this.getResults();
+            setTimeout(this.getResults(), 2000);//to get more fresh data
         },
 
         unmounted()

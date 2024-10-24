@@ -245,7 +245,7 @@
                     this.currentGamePoll(currentGameId);
                 })
                 .catch(error => {
-                    setTimeout(() => this.setPLayedGame(currentGameId), 2000);
+                    setTimeout(() => this.setPLayedGame(currentGameId), 2000);//to get more fresh data
                     // console.log(error);
                 })
             },
