@@ -13,6 +13,7 @@ async def spit_url(prompt):
 
         request_image = IImageInference(
         positivePrompt=prompt,
+        #model="runware:100@1",
         model="civitai:36520@76907",
         numberResults=1,
         height=512,

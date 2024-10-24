@@ -31,7 +31,8 @@ async def f():
     await (runware.connect())
 
     request_image = IImageInference(
-      positivePrompt="squirrel",
+      positivePrompt="strong cat",
+      #model="runware:100@1",
       model="civitai:36520@76907",
       numberResults=1,
       height=512,
@@ -40,6 +41,7 @@ async def f():
       steps=30
     )
 
+    print("gnerating..")
     images = await runware.imageInference(requestImage=request_image)
     return images[0].imageURL
 

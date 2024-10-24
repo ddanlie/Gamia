@@ -381,15 +381,17 @@
                     params: {
                         userId: this.user.id,
                     },
-                    timeout: 10000
+                    timeout: 100000
                 })
                 .then(response => {
                     this.describedImgSrc = response.data.src; 
-                    this.render = true;
                 })
                 .catch(error => {
                     this.errorWarning = "Error, could not get image";
                     setTimeout(()=>{this.errorWarning=""}, 3000);
+                })
+                .finally(()=>{
+                    this.render = true;
                 })
             },
 

@@ -4,6 +4,8 @@ from flask_cors import CORS
 import json, random, string
 import uuid
 from fluxGenerator import spit_url
+from sqlalchemy import text
+
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -414,13 +416,16 @@ trace = 'user{}Called'
 
 @app.route('/api/recycle_submit_prompt', methods=['POST']) 
 def post_recycle_submit_prompt():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
     data = request.get_json()
     user = Users.query.get(data['userId'])
     if not user:
+        db.session.rollback()
         return jsonify({}), 404
     
-    game = user.current_played_game
+    game = PlayedGame.query.filter_by(id=user.current_played_game.id).with_for_update().first()#user.current_played_game
     if not game:
+        db.session.rollback()
         return jsonify({}), 404
 
     logic = json.loads(game.temp_json_data)
@@ -436,9 +441,10 @@ def post_recycle_submit_prompt():
     elif logic[userTrace] == submitPromptTrace:#prompt was already submitted but we can resubmit it
         resubmition = True
     else:
+        db.session.rollback()
         return jsonify({}), 404
 
-       
+    
 
     #generate image by prompt
     generatedSrc = get_fake_src()# generate_image(data['prompt'], game.id, game.game_ref.type) 
@@ -487,14 +493,17 @@ def post_recycle_submit_prompt():
 #TODO: add to docs
 @app.route('/api/recycle_prepare_describing') 
 async def get_recycle_prepare_describing():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
     user = Users.query.get(request.args['userId'])
     if not user:
         print("PREP DESC USER 404")
+        db.session.rollback()
         return jsonify({}), 404
     
-    game = user.current_played_game
+    game = PlayedGame.query.filter_by(id=user.current_played_game.id).with_for_update().first()#user.current_played_game
     if not game:
         print("PREP DESC GAME 404")
+        db.session.rollback()
         return jsonify({}), 404
     
     logic = json.loads(game.temp_json_data)
@@ -502,14 +511,16 @@ async def get_recycle_prepare_describing():
     #protection
     #call rules:  submit_prompt -----> prepare_describing -----> submit_prompt -----> prepare_describing ...
     userTrace = trace.format(request.args['userId'])
-   
+
     #1. call order
     if(not logic.get(userTrace)):#no trace - bad, we are not the first function user had to call
         print("PREP DESC NOTRACE 404"+f" {game.temp_json_data}")
+        db.session.rollback()
         return jsonify({}), 404
     elif logic[userTrace] != submitPromptTrace:#trace is present but specified wrong
-       print("PREP DESC WRONGTRACE 404")
-       return jsonify({}), 404
+        print("PREP DESC WRONGTRACE 404")
+        db.session.rollback()
+        return jsonify({}), 404
     else:#if order is ok we modify trace
         logic[userTrace] = getImageTrace
 
@@ -530,14 +541,14 @@ async def get_recycle_prepare_describing():
     src = None
     if foundUnit:
         foundUnit['users'].append(int(user.id))
-        generatedSrc = get_fake_real_src()
-        #generatedSrc = await generate_image(foundUnit['prompts'][-1], game.id, game.game_ref.type)
+        #generatedSrc = get_fake_real_src()
+        generatedSrc = await generate_image(foundUnit['prompts'][-1], game.id, game.game_ref.type)
         foundUnit['generatedSrc'][-1] = generatedSrc#see - submit prompt
         src = foundUnit['generatedSrc'][-1]
     else:
         lastChanceUnit['users'].append(int(user.id))
-        generatedSrc = get_fake_real_src()
-        #generatedSrc = await generate_image(lastChanceUnit['prompts'][-1], game.id, game.game_ref.type)
+        #generatedSrc = get_fake_real_src()
+        generatedSrc = await generate_image(lastChanceUnit['prompts'][-1], game.id, game.game_ref.type)
         lastChanceUnit['generatedSrc'][-1] = generatedSrc#see - submit prompt
         src = lastChanceUnit['generatedSrc'][-1]
 
