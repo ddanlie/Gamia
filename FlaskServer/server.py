@@ -109,6 +109,7 @@ with app.app_context():
 #Routes#################################################################################
 @app.route('/api/fantom_user') 
 def get_fantom_user():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
     id = request.cookies.get('userId')
     fantom_user = None
     if id:
@@ -194,7 +195,8 @@ def get_played_game():
 
 
 @app.route('/api/create_game_for', methods=["POST"]) 
-def post_create_game_for():    
+def post_create_game_for():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
     data = request.get_json() 
     host_id = data['userId']
     new_game_id = data['gameId']
@@ -202,14 +204,17 @@ def post_create_game_for():
     host = Users.query.get(host_id)
 
     if not host:
+        db.session.rollback()
         return jsonify({}), 404
     
     #if user already has game - not allow to create game
     if(host.current_game_id != None):
+        db.session.rollback()
         return jsonify({}), 404
     #if user has game with status: preparing - give host to someone else or delete game
     game = PlayedGame.query.get(host.current_game_id)
     if(game):
+        db.session.rollback()
         return jsonify({}), 200
 
     #some day - check if party code is not unique
