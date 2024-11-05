@@ -178,8 +178,8 @@ def get_played_game():
         "party_code": game.party_code,
         "private": game.private,
         "name": game.game_ref.type,
-        "logic": game.temp_json_data,#TODO update doc
-        "stage": game.stage#TODO update docs
+        "logic": game.temp_json_data,
+        "stage": game.stage
     }
     return jsonify(data)
 
@@ -345,7 +345,6 @@ def get_toggle_ready():
     if(allReady):
         set_next_stage_and_save(game)
 
-    #TODO: user.ready is not returned anymore
     return jsonify({}), 200
 
 
@@ -389,7 +388,6 @@ async def generate_image(prompt, uniqueGameId, gameType) -> str:
     
     # path += f'/game-{uniqueGameId}-{uuid.uuid4()}.jpg'
 
-    # #TODO: temporary logic untill api connected
     # path =  "generatedExample.jpg"
     # src = url_for('static', filename=path, _external=True)
     url = await spit_url(prompt)
@@ -412,8 +410,6 @@ def get_fake_real_src():
 
 #specific game logic requests
 #Recycle
-#TODO: add to docs
-#TODO: add get version with instant src rewriting and returning (make reproductable image name (not uuid) - gameId+playerId+...) 
 
 submitPromptTrace = 'submit prompt'
 getImageTrace = 'get image'
@@ -495,7 +491,6 @@ def post_recycle_submit_prompt():
 
 
 
-#TODO: add to docs
 @app.route('/api/recycle_prepare_describing') 
 async def get_recycle_prepare_describing():
     db.session.execute(text('BEGIN EXCLUSIVE'))
@@ -565,7 +560,6 @@ async def get_recycle_prepare_describing():
 
 
 
-#TODO: add to docs
 @app.route('/api/recycle_game_results') 
 def get_recycle_game_results():
     game = PlayedGame.query.get(request.args['gameId'])

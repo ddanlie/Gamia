@@ -381,7 +381,7 @@
                     params: {
                         userId: this.user.id,
                     },
-                    timeout: 100000
+                    timeout: 10000
                 })
                 .then(response => {
                     this.describedImgSrc = response.data.src; 
