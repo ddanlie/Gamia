@@ -221,7 +221,7 @@
                     this.user = response.data;
                     console.log("1. Current user = "+JSON.stringify(this.user));
 
-                    this.setPLayedGame(this.user.current_game_id);
+                    this.setPlayedGame(this.user.current_game_id);
                 })
                 .catch(error => {
                     setTimeout(this.setUserThenGame, 2000);
@@ -229,7 +229,7 @@
                 })
             },
             
-            setPLayedGame(currentGameId)
+            setPlayedGame(currentGameId)
             {
                 if(!this.mounted)
                     return;
@@ -251,7 +251,7 @@
                     this.currentGamePoll(currentGameId);
                 })
                 .catch(error => {
-                    setTimeout(() => this.setPLayedGame(currentGameId), 2000);//to get more fresh data
+                    setTimeout(() => this.setPlayedGame(currentGameId), 2000);//to get more fresh data
                     // console.log(error);
                 })
             },
