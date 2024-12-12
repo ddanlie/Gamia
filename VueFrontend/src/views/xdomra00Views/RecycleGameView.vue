@@ -1,6 +1,7 @@
 
 <template>
-    <div v-if="this.render" class="flex one center">
+    <!-- <div v-if="this.render" class="flex one center"> -->
+    <div class="flex one center">
         <h4 v-if="errorWarning" class="redColor">
             {{ errorWarning }}
         </h4>
