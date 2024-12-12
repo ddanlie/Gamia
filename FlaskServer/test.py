@@ -26,24 +26,22 @@ import time
 import asyncio
 
 async def f():
-    
-    runware = Runware(api_key=os.getenv('RUNWARE_API_KEY'))
-    await (runware.connect())
+  runware = Runware(api_key=os.getenv('RUNWARE_API_KEY'))
+  await (runware.connect())
 
-    request_image = IImageInference(
-      positivePrompt="strong cat",
-      #model="runware:100@1",
-      model="civitai:36520@76907",
-      numberResults=1,
-      height=512,
-      width=512,
-      seed=int(time.time()),
-      steps=30
-    )
+  request_image = IImageInference(
+    positivePrompt="strong cat",
+    #model="runware:100@1",
+    model="civitai:36520@76907",
+    numberResults=1,
+    height=512,
+    width=512,
+    steps=30
+  )
 
-    print("gnerating..")
-    images = await runware.imageInference(requestImage=request_image)
-    return images[0].imageURL
+  print("generating..")
+  images = await runware.imageInference(requestImage=request_image)
+  return images[0].imageURL
 
 loop = asyncio.get_event_loop()
 print(loop.run_until_complete(loop.create_task(f())))

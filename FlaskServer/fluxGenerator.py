@@ -18,7 +18,7 @@ async def spit_url(prompt):
         numberResults=1,
         height=512,
         width=512,
-        seed=int(time.time()),
+        seed=int(time.time()%9223372036854776000),
         steps=30
         )
 
