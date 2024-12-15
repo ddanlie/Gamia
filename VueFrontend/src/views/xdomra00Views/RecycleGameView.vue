@@ -91,7 +91,7 @@
 
             <!-- chat -->
             <div class="full off-fourth-500 half-500 off-none-1000 off-none-1500 fifth-1500 chatWrap">
-                <ChatComponent/>
+                <ChatComponent :messages="this.messages" :userId="this.user.id"/>
             </div>
             <!-- players -->
             <div class="full partyUsersWrap">
@@ -154,6 +154,7 @@
                 newTimer: false,
                 submitsCount: 3,//min - 1
                 render: false,
+                messages: []
             }   
         },
 
@@ -243,6 +244,9 @@
                 .then(response => {
                     this.currentGame = response.data;
                     this.currentGame.logic = JSON.parse(this.currentGame.logic);
+                    this.currentGame.chat = JSON.parse(this.currentGame.chat);
+                    this.messages = this.currentGame.chat;
+                    console.log("messages: "+this.messages);
                     console.log("2. Current game = "+JSON.stringify(this.currentGame));
                     
                     this.render = true;
@@ -319,6 +323,9 @@
                 .then(response => {
                     this.currentGame = response.data;
                     this.currentGame.logic = JSON.parse(this.currentGame.logic);
+                    this.currentGame.chat = JSON.parse(this.currentGame.chat);
+                    this.messages = this.currentGame.chat.messages;
+                    console.log("messages: "+this.messages);
                     console.log("3. Current game = "+JSON.stringify(this.currentGame));
                 })
                 .catch(error => {
