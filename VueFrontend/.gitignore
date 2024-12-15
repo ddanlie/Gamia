@@ -28,3 +28,14 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+
+#databases
+*.db
+
+#test and static files
+*.txt
+test.*
+*.png
+*.jpg
+*.jpeg
