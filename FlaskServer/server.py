@@ -87,14 +87,14 @@ def insert_default_games():
 
 def putGameLogic(type, logic):
     if type == 'Riddle':
-        logic['secTimer'] = 20
+        logic['secTimer'] = 30
         logic['history'] = {}
         logic['users'] = []
         logic['rounds'] = {}
         logic['stages'] = 2
 
     elif type == 'Recycle':
-        logic['secTimer'] = 500
+        logic['secTimer'] = 30
         logic['history'] = []
 
 
@@ -699,8 +699,8 @@ async def post_riddle_submit_prompt():
 
 
     prompt = data['prompt']
-    generatedSrc = get_fake_real_src()
-    #generatedSrc = await generate_image(data['prompt'], game.id, game.game_ref.type)
+    #generatedSrc = get_fake_real_src()
+    generatedSrc = await generate_image(data['prompt'], game.id, game.game_ref.type)
 
     if not (str(user.id) in logic["history"]):
         logic["history"][str(user.id)] = {}
@@ -806,8 +806,8 @@ async def guess_img():
     original_prompt = logic['history'][str(original_prompt_userid)]['sourceImg']['prompt']
     print(original_prompt)
     prompt = data['prompt']
-    generatedSrc = get_fake_real_src()
-    # generatedSrc = await generate_image(prompt, game.id, game.game_ref.type)
+    #generatedSrc = get_fake_real_src()
+    generatedSrc = await generate_image(prompt, game.id, game.game_ref.type)
     score = fuzz.ratio(original_prompt, prompt)
     logic['history'][str(original_prompt_userid)]['copies'][str(user.id)] = {"name": user.name, "prompt": prompt, "url" : generatedSrc, "score" : score}
     
