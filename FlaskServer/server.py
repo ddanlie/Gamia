@@ -5,6 +5,8 @@ import json, random, string
 import uuid
 from fluxGenerator import spit_url
 from sqlalchemy import text
+from fuzzywuzzy import fuzz
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -49,6 +51,7 @@ class PlayedGame(db.Model):
     private = db.Column(db.Boolean, default=False)
     stage = db.Column(db.Integer, nullable=False, default=0)
     temp_json_data = db.Column(db.String(5000), nullable=True)
+    chat_json_data = db.Column(db.String(5000), nullable=True)
 
     game_ref = db.relationship('AllGames', backref='played_games')
     # players = db.relationship('Users', backref='played_game')
@@ -84,7 +87,11 @@ def insert_default_games():
 
 def putGameLogic(type, logic):
     if type == 'Riddle':
-        logic['secTimer'] = 50
+        logic['secTimer'] = 20
+        logic['history'] = {}
+        logic['users'] = []
+        logic['rounds'] = {}
+        logic['stages'] = 2
 
     elif type == 'Recycle':
         logic['secTimer'] = 500
@@ -134,6 +141,90 @@ def get_fantom_user():
 
     return response
 
+@app.route('/api/user')
+def get_user():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    id = request.cookies.get('userId')
+    user = None
+    if id:
+        user = Users.query.get(int(id))
+    if not user:
+        user = Users(name='#user', fantom=True)
+        db.session.add(user)
+        db.session.commit()
+        user.name = f"{user.id:04d}" + user.name
+        db.session.commit()
+
+    user_data = {
+        'id': user.id,
+        'name': user.name,
+        'fantom' : user.fantom
+    }
+
+    response = jsonify(user_data)
+    response.set_cookie('userId', value=str(user_data['id']), secure=False)
+
+    return response
+
+@app.route('/api/register', methods=["POST"])
+def register_user():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    data = request.get_json()
+    if not data or 'name' not in data or 'email' not in data or 'password' not in data:
+        return jsonify({}), 400
+    name = data['name']
+    email = data['email']
+    password = data['password']
+
+    user = Users.query.filter_by(email=email).first()
+    if user:
+        return jsonify({}), 400
+
+    new_user = Users(name=name, email=email, password=password, fantom=False)
+    db.session.add(new_user)
+    db.session.commit()
+
+    data = {
+        'id':new_user.id,
+        'name':new_user.name,
+        'fantom':new_user.fantom
+    }
+
+    response = jsonify(data)
+    response.set_cookie('userId', value=str(new_user.id), secure=False)
+
+    return response
+
+
+@app.route('/api/login', methods=["POST"])
+def login_user():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    data = request.get_json()
+    if not data or 'email' not in data or 'password' not in data:
+        return jsonify({"error": "Invalid data. Missing name, email, or password."}), 400
+
+    email = data['email']
+    password = data['password']
+    user = Users.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({}), 400 
+    if user.password != password:
+        return jsonify({}), 400
+    
+    db.session.add(user)
+    db.session.commit()
+
+    data = {
+        'id':user.id,
+        'name':user.name,
+        'fantom':user.fantom
+    }
+
+    response = jsonify(data)
+    response.set_cookie('userId', value=str(user.id), secure=False)
+
+    return response
+
 
 @app.route('/api/all_games') 
 def get_all_games():
@@ -148,7 +239,6 @@ def get_all_games():
     ]
 
     return jsonify(games_data)
-
 
 @app.route('/api/game_info') 
 def get_game_info():
@@ -179,7 +269,8 @@ def get_played_game():
         "private": game.private,
         "name": game.game_ref.type,
         "logic": game.temp_json_data,
-        "stage": game.stage
+        "stage": game.stage,
+        "chat": game.chat_json_data
     }
     return jsonify(data)
 
@@ -231,6 +322,9 @@ def post_create_game_for():
     logic = {}
     putGameLogic(new_game.game_ref.type, logic)
     new_game.temp_json_data = json.dumps(logic)
+    chat = {}
+    chat['messages'] = []
+    new_game.chat_json_data = json.dumps(chat)
     db.session.commit()
 
     host.current_game_id = new_game.id
@@ -490,7 +584,6 @@ def post_recycle_submit_prompt():
     return jsonify({}), 200
 
 
-
 @app.route('/api/recycle_prepare_describing') 
 async def get_recycle_prepare_describing():
     db.session.execute(text('BEGIN EXCLUSIVE'))
@@ -584,6 +677,270 @@ def get_recycle_game_results():
 
 #Riddle
 
+def mix_players_order(list):
+    list = list[1:] + list[:1] 
+    return list
+
+@app.route('/api/riddle_submit_prompt', methods=['POST']) 
+async def post_riddle_submit_prompt():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    data = request.get_json()
+    user = Users.query.get(data['userId'])
+    if not user:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    game = PlayedGame.query.filter_by(id=user.current_played_game.id).with_for_update().first()#user.current_played_game
+    if not game:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    logic = json.loads(game.temp_json_data)
+
+
+    prompt = data['prompt']
+    generatedSrc = get_fake_real_src()
+    #generatedSrc = await generate_image(data['prompt'], game.id, game.game_ref.type)
+
+    if not (str(user.id) in logic["history"]):
+        logic["history"][str(user.id)] = {}
+        logic["history"][str(user.id)]['sourceImg'] = {}
+        logic['stages'] +=1
+        logic['users'].append(user.id)
+    
+
+    logic["history"][str(user.id)]['sourceImg']['name'] = user.name
+    logic["history"][str(user.id)]['sourceImg']['prompt'] = prompt
+    logic["history"][str(user.id)]['sourceImg']['url'] = generatedSrc
+
+    logic["history"][str(user.id)]['copies'] = {}
+    logic["history"][str(user.id)]['winner'] = None
+
+
+    game.temp_json_data = json.dumps(logic)
+    db.session.add(game)
+    db.session.commit()
+
+    return jsonify({}), 200
+
+
+@app.route('/api/riddle_get_image') 
+async def riddle_get_image():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    user = Users.query.get(request.args['userId'])
+    if not user:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    game = PlayedGame.query.filter_by(id=user.current_played_game.id).with_for_update().first()#user.current_played_game
+    if not game:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    logic = json.loads(game.temp_json_data)
+
+    entry = logic['history'][str(user.id)]['sourceImg']
+
+    prompt = entry['prompt']
+    #generatedSrc = await generate_image(prompt, game.id, game.game_ref.type)
+    #entry['url'] = generatedSrc
+
+    game.temp_json_data = json.dumps(logic)
+    #print(generatedSrc)
+    print(logic)
+
+    logic = json.loads(game.temp_json_data)
+
+    if logic['rounds'] == {}:
+        logic = await get_order(logic)
+        print("GOT ORDER")
+        game.temp_json_data = json.dumps(logic)
+        db.session.add(game)
+        db.session.commit()
+    else:
+        print("DIDNT GET ORDER")
+
+    logic = json.loads(game.temp_json_data)
+
+    guess_img_id = logic['rounds'][str(user.id)][game.stage-2]
+    entry = logic['history'][str(guess_img_id)]['sourceImg']
+    
+    guess_img = entry['url']
+
+    game.temp_json_data = json.dumps(logic)
+    db.session.add(game)
+    db.session.commit()
+
+    return jsonify({"src": guess_img}), 200
+
+async def get_order(logic):
+    random.shuffle(logic["users"])
+
+    user_rounds = {}
+    for i, userid in enumerate(logic["users"]):
+        other_users = logic["users"][:i] + logic["users"][i+1:]
+        user_rounds[userid] = other_users
+    logic["rounds"] = user_rounds
+    return logic
+
+@app.route('/api/riddle_guess_image', methods=['POST'])
+async def guess_img():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    data = request.get_json()
+    user = Users.query.get(data['userId'])
+    if not user:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    game = PlayedGame.query.filter_by(id=user.current_played_game.id).with_for_update().first()#user.current_played_game
+    if not game:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    logic = json.loads(game.temp_json_data)
+
+    original_prompt_userid = logic['rounds'][str(user.id)][game.stage-2]
+    print(user.id)
+    print(original_prompt_userid)
+
+    original_prompt = logic['history'][str(original_prompt_userid)]['sourceImg']['prompt']
+    print(original_prompt)
+    prompt = data['prompt']
+    generatedSrc = get_fake_real_src()
+    # generatedSrc = await generate_image(prompt, game.id, game.game_ref.type)
+    score = fuzz.ratio(original_prompt, prompt)
+    logic['history'][str(original_prompt_userid)]['copies'][str(user.id)] = {"name": user.name, "prompt": prompt, "url" : generatedSrc, "score" : score}
+    
+    game.temp_json_data = json.dumps(logic)
+    db.session.add(game)
+    db.session.commit()
+
+    return jsonify({"src": generatedSrc, "score": score}), 200
+
+
+@app.route("/api/send_message", methods=["POST"])
+async def send_message():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    data = request.get_json()
+    user = Users.query.get(data['userId'])
+    if not user:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    game = PlayedGame.query.filter_by(id=user.current_played_game.id).with_for_update().first()#user.current_played_game
+    if not game:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    messageText = data['msg']
+    current_time = datetime.now()
+    formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+
+    message = {"name" : user.name, "text": messageText, "timestamp": formatted_time}
+
+    chat = json.loads(game.chat_json_data)
+
+    chat["messages"].append(message)
+
+    game.chat_json_data = json.dumps(chat)
+    db.session.add(game)
+    db.session.commit()
+
+    return jsonify({}), 200
+
+@app.route("/api/add_riddle_points", methods=["POST"])
+async def add_riddle_points():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    data = request.get_json()
+    user = Users.query.get(data['userId'])
+    if not user:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    game = PlayedGame.query.filter_by(id=user.current_played_game.id).with_for_update().first()#user.current_played_game
+    if not game:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    points = 0
+
+    logic = json.loads(game.temp_json_data)
+    for key, record in logic["history"].items():
+        winner = record.get("winner")
+        if winner and winner.get("id") == user.id:
+            points += 10
+
+    stats = GameStatistics(user_id = user.id, played_game_id = game.game_id, points_earned = points)
+    db.session.add(stats)
+    db.session.commit()
+
+    return jsonify({}), 200
+
+@app.route("/api/get_winner", methods=["POST"])
+async def get_winner():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    data = request.get_json()
+    user = Users.query.get(data['userId'])
+    if not user:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    game = PlayedGame.query.filter_by(id=user.current_played_game.id).with_for_update().first()#user.current_played_game
+    if not game:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    logic = json.loads(game.temp_json_data)
+
+    history = logic['history']
+
+    for id, entry in history.items():
+        copies = entry.get("copies", {})
+        winner = None
+
+        for copy_id, copy_data in copies.items():
+            if winner is None or copy_data["score"] > winner["score"]:
+                winner = {
+                    "id": int(copy_id),
+                    "name": copy_data["name"],
+                    "prompt": copy_data["prompt"],
+                    "url": copy_data["url"],
+                    "score": copy_data["score"]
+                }
+        entry["winner"] = winner
+
+
+    game.temp_json_data = json.dumps(logic)
+    db.session.add(game)
+    db.session.commit()
+
+    return jsonify({"logic": logic}), 200
+
+
+@app.route("/api/get_stats", methods=["POST"])
+async def get_stats():
+    db.session.execute(text('BEGIN EXCLUSIVE'))
+    data = request.get_json()
+    user = Users.query.get(data['userId'])
+    if not user:
+        db.session.rollback()
+        return jsonify({}), 404
+    
+    
+    riddle_game = AllGames.query.filter_by(type='Riddle').first()
+    recycle_game = AllGames.query.filter_by(type='Recycle').first()
+
+    riddle_stats = GameStatistics.query.filter_by(user_id = user.id, played_game_id = riddle_game.id).all()
+    riddle_points = sum(s.points_earned for s in riddle_stats)
+
+    recycle_stats = GameStatistics.query.filter_by(user_id = user.id, played_game_id = recycle_game.id).all()
+    recycle_points = sum(s.points_earned for s in recycle_stats)
+
+    return jsonify({"riddle_points" : riddle_points, "recycle_points": recycle_points}), 200
+
+
+    
+    
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', debug=True)

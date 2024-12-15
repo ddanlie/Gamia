@@ -1,7 +1,13 @@
 
 <template>
     <div class="flex one">
-        <h1 class="full greenColor">Welcome to <span class="redColor">Gamia</span></h1>
+        <div style="display: grid; grid-template-columns: 1fr auto;">
+            <h1 class="full greenColor" style="margin-left: 50px;">Welcome to <span class="redColor">Gamia</span></h1>
+            <button class="greenBack" @click="go_to_user" style="margin-right: 50px; margin-top: 50px; height: 70px;">
+                <h3>User</h3>
+            </button>
+        </div>
+        
         <div class="flex three textCenter">
             <!-- left block -->
             <div class="flex center full half-1000 third-1500">
@@ -181,6 +187,11 @@
                     this.errorWarning = "Error, try again";
                     setTimeout(()=>{this.errorWarning=""}, 3000);
                 })
+            },
+
+            go_to_user()
+            {
+                this.$router.push({ name: "User" });
             }
         }
 

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, createWebHashHistory, createMemoryHisto
 import HomeView from '../views/HomeView.vue'
 import RecycleGameView from '@/views/xdomra00Views/RecycleGameView.vue'
 import RiddleGameView from '@/views/xivano08Views/RiddleGameView.vue'
+import UserPageView from '@/views/xivano08Views/UserPageView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/RiddleGame',
       name: 'Riddle',
       component: RiddleGameView
+    },
+    {
+      path: '/User',
+      name: 'User',
+      component: UserPageView
     },
   ]
 })
