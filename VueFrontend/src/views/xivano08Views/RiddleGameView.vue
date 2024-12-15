@@ -248,7 +248,7 @@
                     this.messages = this.game.chat.messages;
                     this.game.logic = JSON.parse(this.game.logic);
                     this.stagesNum = this.game.logic['stages']
-                    console.log(this.stagesNum)
+                    //console.log(this.stagesNum)
                     
                     console.log("2. Current game = "+JSON.stringify(this.game));
                     

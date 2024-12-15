@@ -112,8 +112,22 @@
         },
 
         getResults() {
-            if (this.logic.history && this.logic.history[this.page + 1]) {
-                this.original_image = this.logic.history[this.page + 1].sourceImg;
+            console.log("PAGE"+this.page);
+            console.log("PAGE"+this.page);
+            console.log("PAGE"+this.page);
+            console.log("PAGE"+this.page);
+            console.log("PAGE"+this.page);
+            
+            let records = [];
+            for (let key in this.logic.history) {
+                records.push([key, this.logic.history[key]]);
+            }
+            
+
+            console.log(JSON.stringify(records[this.page]));
+            console.log(JSON.stringify(records[this.page+1]));
+            if (this.logic.history && records[this.page][1]) {
+                this.original_image = records[this.page][1].sourceImg;
             } else {
                 console.warn("Page out of bounds or logic.history missing!");
             }
@@ -121,15 +135,14 @@
             console.log(JSON.stringify(this.logic));
             console.log(JSON.stringify(this.original_image));
 
-            this.copies = Object.values(this.logic.history[this.page + 1].copies);
+            this.copies = Object.values(records[this.page][1].copies);
             console.log(JSON.stringify(this.copies));
 
-            this.winner = this.logic.history[this.page+1].winner
+            this.winner = records[this.page][1].winner
             if (this.winner == null)
             {
                 this.winner = {"id": 0, "name": "", "url": "", "prompt": "", "score": ""};
             }
-            this.addPoints();
         },
 
         getWinner()
@@ -143,6 +156,7 @@
             })
             .then(response => {
                 this.logic = response.data.logic;
+                this.addPoints();
                 this.getResults();
             })
             .catch(error => {

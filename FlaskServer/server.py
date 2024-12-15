@@ -87,7 +87,7 @@ def insert_default_games():
 
 def putGameLogic(type, logic):
     if type == 'Riddle':
-        logic['secTimer'] = 30
+        logic['secTimer'] = 120
         logic['history'] = {}
         logic['users'] = []
         logic['rounds'] = {}
