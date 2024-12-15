@@ -23,26 +23,6 @@
 
         </div><br>
 
-        <!--<div v-if="0" style="display: flex; justify-content: center;">
-            <form style="width: 250px; align-self: center;" @submit.prevent>
-                <div class="form-group">
-                    <label for="name">Name:</label>
-                    <input type="text" v-model="form.name" id="name"/>
-                </div>
-                <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="text" v-model="form.email" id="email" required/>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" v-model="form.password" id="password" required/>
-                </div>
-                <div style="display: grid; grid-template-columns: auto auto; gap: 10px;">
-                    <button class="redBack" type="submit" @click="login">Log In</button>
-                    <button class="redBack" type="submit" @click="register">Register</button>
-                </div>
-            </form>
-        </div>-->
         <h3 v-show="error_visible" style="color: red;">Invalid data</h3>
         
 

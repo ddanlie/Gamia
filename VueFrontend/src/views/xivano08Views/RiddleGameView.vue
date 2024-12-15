@@ -161,29 +161,26 @@
             },
         
             'game.stage'(newInfo, oldInfo) {
-                if (oldInfo === "") return; // Skip if there's no previous stage
+                if (oldInfo === "") return; 
             
                 const stageOrder = newInfo + 1;
                 const isLastStage = stageOrder === this.stagesNum && stageOrder > 2;
             
                 if (stageOrder > this.stagesNum) {
                     console.log("HEEEEEEREEEEE");
-                    return; // Prevent going beyond the total stages
+                    return; 
                 }
             
-                // Handle last stage logic
                 if (isLastStage) {
                     console.log("FINISH GAME!");
                     this.finishGame();
-                    this.newTimer = false; // Reset timer
+                    this.newTimer = false; 
                     return;
                 }
-            
-                // If the stage has changed
+
                 if (newInfo !== oldInfo) {
                     console.log(`NEW STAGE ${newInfo}, OLD ${oldInfo}, Finish: ${isLastStage}`);
-                
-                    // For stages beyond the prompt description stage
+
                 
                     if (stageOrder > 2) {
                         console.log("PROCESSING PROMPT DESCRIPTION STAGE");
@@ -192,8 +189,7 @@
                         
                         setTimeout(this.getSrcImage, 1000);
                     }
-                
-                    // Update timer
+
                     this.newTimer = true;
                 }
             }
@@ -231,7 +227,6 @@
                 })
                 .catch(error => {
                     setTimeout(this.setUser, 2000);
-                    // console.log(error);
                 })
 
                 
@@ -290,7 +285,6 @@
                 })
                 .catch(error => {
                     setTimeout(this.setGameInfo, 2000);
-                    // console.log(error);
                 })
             },
 
